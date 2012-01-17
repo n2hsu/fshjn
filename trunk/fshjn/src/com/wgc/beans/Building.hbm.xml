@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.wgc.beans.Building" table="building_info" >
+        <id name="lh" type="java.lang.Short">
+            <column name="lh" />
+            <generator class="assigned" />
+        </id>
+        <property name="lm" type="java.lang.String">
+            <column name="lm" length="15" not-null="true" />
+        </property>
+        <property name="cwzs" type="java.lang.String">
+            <column name="cwzs" length="5" not-null="true" />
+        </property>
+        <property name="yycws" type="java.lang.Short">
+            <column name="yycws" not-null="true" />
+        </property>
+        <property name="jss" type="java.lang.String">
+            <column name="jss" length="3" />
+        </property>
+    </class>
+</hibernate-mapping>

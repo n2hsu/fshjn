@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.wgc.beans.Senser_style" table="senser_style" >
+        <id name="cgqlxID" type="java.lang.Integer">
+            <column name="cgqlxID" />
+            <generator class="assigned" />
+        </id>
+        <property name="cgqlxm" type="java.lang.String">
+            <column name="cgqlxm" length="30" not-null="true" />
+        </property>
+        <property name="mini" type="java.lang.Integer">
+            <column name="mini" not-null="false" />
+        </property>
+        <property name="maxi" type="java.lang.Integer">
+            <column name="maxi" not-null="false" />
+        </property>
+        <property name="dxz" type="java.lang.Integer">
+            <column name="dxz" not-null="false" />
+        </property>
+        <property name="mnl" type="java.lang.String">
+            <column name="mnl" length="2" not-null="true" />
+        </property>
+    </class>
+</hibernate-mapping>

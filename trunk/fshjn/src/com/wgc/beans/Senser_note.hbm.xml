@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.wgc.beans.Senser_note" table="senser_note" >
+        <id name="cgqjlID" type="java.lang.Long">
+            <column name="cgqjlID" />
+            <generator class="identity" />
+        </id>
+        <many-to-one name="senser" class="com.wgc.beans.Senser" fetch="select">
+            <column name="cgqID" length="50" />
+        </many-to-one>
+        <property name="cgqz" type="java.lang.String">
+            <column name="cgqz" length="5" />
+        </property>
+        <property name="jlsj" type="java.sql.Timestamp">
+            <column name="jlsj" length="23" />
+        </property>
+    </class>
+</hibernate-mapping>

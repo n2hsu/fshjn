@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"  xmlns:mx="library://ns.adobe.com/flex/mx"  
+		 height="194" width="278"  implements="mx.core.IToolTip" chromeColor="#1AA4DD" borderVisible="false" borderAlpha="0.22" backgroundAlpha="0.5" creationComplete="panel1_creationCompleteHandler(event)">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import com.wgc.asFolder.GobalVaris;
+			import mx.controls.Alert;
+			
+			private  var _text:String;
+			public function get text():String {
+				return _text;
+			}
+			public function set text(value:String):void {
+				this._text = value;
+			}
+			
+			
+			protected function panel1_creationCompleteHandler(event:FlexEvent):void{
+				_text = GobalVaris.popUpTitle;
+				if(_text =="信息楼"){
+					popUpImg1.source = "com/wgc/images/xx_building.png";
+					popUpText1.text = "信息楼拥有面积6000多平方米的实验室及信息学院办公场所，建有省级重点实验室、拥有CISCO、3COM等网络交换机、路由器、服务" +
+						"器等先进设备，建有ATM/千兆以太网混合网络环境。";
+				}
+				if(_text =="材料楼"){
+					popUpImg1.source = "com/wgc/images/cl_building.png";
+					popUpText1.text = "材料楼拥有5700平方米的实验室群、200平方米的复合材料试验室群及300平方米的试验车间。拥有先进的材料测试仪器，精良的仪器设" +
+						"备不仅满足了教学的需要，也为科研和培养研究生创造了条件。"
+				}
+				if(_text =="文学楼"){
+					popUpImg1.source = "com/wgc/images/wx_building.png";
+					popUpText1.text = "文学楼位于学校北部，是学习公共课的主教学楼之一，共拥有250间教室，可容纳接近9000名学生同时上课。同学可以方便的换乘在此换乘公交。";
+				}
+				if(_text =="外语楼"){
+					popUpImg1.source = "com/wgc/images/wy_building.png";
+					popUpText1.text = "外语楼，是一栋集自习室、多媒体室为一体的教学楼，位于学校南部，学校设有外语角，便于同学们和教师的交流。并聘请多名外教前来" +
+						"学校从事教学工作，为学生的发展提供了良好的师资环境。" ;
+				}
+				if(_text =="经济楼"){
+					popUpImg1.source = "com/wgc/images/jj_building.png";
+					popUpText1.text = "经济楼，是管理学院和经济学院的办公场所，同时配有相关的实验机房和教学楼。";
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:Image id="popUpImg1" width="150" height="150" top="0" left="0" source="com/wgc/images/xx_building.png"/>
+	<s:TextArea id="popUpText1" width="119" right="10" top="0" text=""
+				borderVisible="false" height="153" alpha="0.7"/>
+</s:Panel>

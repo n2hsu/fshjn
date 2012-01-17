@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-module
+  type="WEB"
+  name="fshjn"
+  id="myeclipse.1284986195024"
+  context-root="/wgc"
+  j2ee-spec="5.0"
+  archive="fshjn.war">
+  <attributes>
+    <attribute name="webrootdir" value="WebRoot" />
+  </attributes>
+</project-module>
+

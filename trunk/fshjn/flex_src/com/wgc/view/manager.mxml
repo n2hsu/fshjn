@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" width="1051" height="525"
+				   creationComplete="initXmlTimer()" >
+	<fx:Declarations>
+		<s:RemoteObject id="EquErrorSele" destination="selectEquError" endpoint="../messagebroker/amf"
+						fault="EquErrorSele_faultHandler(event)">
+			<s:method name="findEquError" result="findEquErrorresulthandler(event)">
+				<s:arguments>
+					<sbm>{equName.selectedItem}</sbm>
+					<shqk>{fOrt.selectedIndex}</shqk>
+				</s:arguments>
+			</s:method>
+		</s:RemoteObject>
+		<!-- 传递预约记录，根据参数设定显示预约未审核和审核历史记录-->
+		<s:RemoteObject id="selectAppoint" destination="selectAppo" endpoint="../messagebroker/amf"
+						fault="selectAppoint_faultHandler(event)">
+			<s:method name="findByShzt" result="selectAppoint_resultHandller(event)" />
+		</s:RemoteObject>
+		<s:RemoteObject id="updateAp" destination="updateAppo" endpoint="../messagebroker/amf"
+						fault="updateAppo_faultHandler(event)">
+			<s:method name="updateShzt"  result="updateShztResulthandler(event)">
+				<s:arguments>
+					<yyIDTemp>{yyIDTemp}</yyIDTemp>
+					<shztTemp>{shztTemp}</shztTemp>
+				</s:arguments>
+			</s:method>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.wgc.asFolder.CarMove;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.effects.Sequence;
+			import mx.events.DataGridEvent;
+			import mx.events.ItemClickEvent;
+			import mx.events.ListEvent;
+			import mx.events.MenuEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+
+			[Bindable] private var equErrNum:ArrayCollection =new ArrayCollection;	
+			[Bindable] private var yy:ArrayCollection = new ArrayCollection;
+			 private var stuInfo:ArrayCollection  = new ArrayCollection;
+			[Bindable] public var torf:ArrayCollection = new  ArrayCollection();
+			[Bindable] public var yyIDTemp:String = null;
+			[Bindable] public var shztTemp:Boolean = false;
+			[Bindable] private var stationNum:ArrayCollection = new ArrayCollection(['1','2','3','4','5','6','7','8','9','10']);
+			[Bindable] private var lines:ArrayCollection = new ArrayCollection(['线路1','线路2','线路3']);
+			[Bindable] private var peopleN:ArrayCollection = new ArrayCollection(['2','5','6']);
+			
+			//线路1
+			private var line1:Array = new Array(
+				new Point(61,243),new Point(169,257),new Point(170,167),
+				new Point(265,158),new Point(394,161),new Point(492,179),
+				new Point(587,192),new Point(683,198),new Point(691,249),
+				new Point(700,319),new Point(724,380)
+			);
+			//线路2
+			private var line2:Array = new Array(
+				new Point(77,252),new Point(161,257),new Point(228,309),
+				new Point(283,282),new Point(348,278),new Point(410,284),
+				new Point(509,291),new Point(582,292),new Point(689,296),
+				new Point(700,300),new Point(705,342)
+			);
+			//线路3
+			private var line3:Array = new Array(
+				new Point(91,140),new Point(189,159),new Point(267,159),
+				new Point(272,241),new Point(311,281),new Point(287,400),
+				new Point(241,355),new Point(180,353),new Point(152,310),
+				new Point(110,274),new Point(64,243)
+			);
+			
+			//小车自动跑的定时器定义
+			private var carAutoT:Timer = new Timer(50000);
+			private var people:XML;
+			
+			//管理员登陆验证，初始化页面自动加载设备损坏界面
+			private function checkUserPsd():void{
+				
+				if(username.text=="admin"&&userpsd.text=="host"){
+					admin.selectedChild=admin_page;
+					EquErrorSele.findEquError('','已损坏');
+				}else{
+					Alert.show("您输入的用户名和密码错误，请核实后再次输入","提示");
+				}
+			}
+			//设备状态信息
+			private function findEquErrorresulthandler(event:ResultEvent):void{
+				
+				equErrNum = event.result as ArrayCollection;
+				if(equErrNum.length==0){
+					Alert.show("没有损坏设备，若查询其他信息，请选择……","错误");
+				}
+			}
+			//设备编号
+			private function operaSbbh(item:Object, column:DataGridColumn):String{
+				return item.cgqID;
+			}
+			//设备名称
+			private function operaSbmc(item:Object, column:DataGridColumn):String{
+				
+				//处理类型ID与类型名称的转换--1电脑2投影仪6门禁12荧光灯
+				if(item.ss.cgqlxID==1){
+					return "电脑";
+				}else{
+					if(item.ss.cgqlxID==2){
+						return "投影仪";
+					}else{
+						if(item.ss.cgqlxID==6){
+							return "门禁";
+						}else{
+							if(item.ss.cgqlxID==12){
+								return "荧光灯";
+							}else{
+								return null;
+							}
+						}
+					}
+				}
+			}
+			//所处位置
+			private function operaScwz(item:Object, column:DataGridColumn):String{
+				
+				var temp2:int;
+				var temp3:String;
+				//提取教学楼号转化成教学楼名						
+				temp2 = parseInt(item.cgqmc.substring(0,1));
+				//提取教室号，无需转换
+				//转换楼名
+				switch(temp2){
+					case 1:temp3 = "信息楼";break;
+					case 2:temp3 = "材料楼";break;
+					case 3:temp3 = "文学楼";break;
+					case 4:temp3 = "外语楼";break;
+					case 5:temp3 = "经济楼";break;
+				}
+				return  temp3+" "+item.cgqmc.substring(1,4)+"号教室" ;
+			}
+			//使用状况
+			private function operaSyzk(item:Object, column:DataGridColumn):String{
+				
+				if(item.sfsh==0){
+					return '设备运行情况良好';
+				}else{
+					return '设备出现故障';
+				} 
+			}
+			private function operaShzt(item:Object , column:DataGridColumn):String{
+				
+				if((item.shzt+"").toUpperCase()=="TRUE"){
+					return "通过审核";
+				}else{
+					return "未通过审核";
+				}
+			}
+			//查询预约结果返回
+			private function selectAppoint_resultHandller(event:ResultEvent):void{
+				yy = event.result  as ArrayCollection;	
+			}
+			private function operaSqr(item:Object,column:DataGridColumn):String{
+				return item.stu.xm;				
+			}
+			private function operaSsbj(item:Object,column:DataGridColumn):String{
+				return item.stu.bjm;				
+			}
+			private function operaSysj(item:Object,column:DataGridColumn):String{
+				
+				var shsjTemp:DateFormatter = new DateFormatter();
+				shsjTemp.formatString = "YYYY-MM-DD";
+				
+				return shsjTemp.format(item.yysj);
+			}
+			private function updateShztResulthandler(event:ResultEvent):void{
+				if((event.result as Boolean)){
+					Alert.show("审核完成","确认");
+				}		
+			}
+			//审核事件触发结果返回处理
+			protected function yyInfo_itemClickHandler(event:ListEvent):void{
+				yyIDTemp = event.itemRenderer.data.yyID;
+				event.itemRenderer.data.shzt = "true";
+				updateAp.updateShzt(yyIDTemp,true);	
+			}
+			private function clickNoCheck():void{
+				
+				selectAppoint.findByShzt('false');
+				yyInfo.editable = true;
+			}
+			private function clickHistory():void{
+			
+				selectAppoint.findByShzt('all');
+				yyInfo.editable = false;
+				yyInfo.removeEventListener(ListEvent.ITEM_CLICK,yyInfo_itemClickHandler);
+				
+			}	
+			protected function EquErrorSele_faultHandler(event:FaultEvent):void{
+				
+				Alert.show("远程调用设备状态查询失败","错误");
+			}
+			protected function selectAppoint_faultHandler(event:FaultEvent):void{
+				Alert.show("没有相关数据-selectAppoint","错误");
+			}
+			protected function updateAppo_faultHandler(event:FaultEvent):void{
+				Alert.show("远程调用更新预约方法调用失败","错误");
+			}
+			
+			//小车从左向右行驶
+			private function  carRunLR(lineArr:Array,bus:Image):void{
+				var po1:Point = new Point;
+				var po2:Point = new Point;
+				var sq:Sequence = new Sequence;
+				
+				for(var i:int = 0;i<lineArr.length-1;i++ ){
+					po1 = lineArr[i];
+					po2 = lineArr[i+1];
+					var carMove:CarMove = new CarMove(po1,po2,bus);
+					sq.addChild(carMove);
+				}
+				sq.play();
+			}
+			//小车从右向左行驶
+			private function  carRunRL(lineArr:Array,bus:Image):void{
+				var po1:Point = new Point;
+				var po2:Point = new Point;
+				var sq:Sequence = new Sequence;
+				
+				for(var i:int = lineArr.length-1;i>0;i--){
+					po1 = lineArr[i];
+					po2 = lineArr[i-1];
+					var carMove:CarMove = new CarMove(po1,po2,bus);
+					sq.addChild(carMove);
+				}
+				sq.play();
+			}
+			
+			//小车路线和图片参数注入---手动发车界面,解决定时器第一次无法加载的问题
+			private function CarRun():void{
+				
+				carRunLR(line1,bus11);carRunRL(line1,bus22);
+				carRunLR(line2,bus33);carRunRL(line2,bus44);
+				carRunLR(line3,bus55);carRunRL(line3,bus66);
+			}
+			//小车路线和图片参数注入---手动发车界面--定时器触发
+			private function CarRunT(event:TimerEvent):void{
+				this.CarRun();
+			}
+			//定时器的初始化和注入函数
+			private function TimerInit():void{
+				carAutoT.addEventListener(TimerEvent.TIMER,CarRunT);
+				carAutoT.start();
+			}
+					
+
+			import com.wgc.asFolder.PeopleNum;
+
+			public var timer2:Timer = new Timer(5000);
+			private var pn:PeopleNum;
+			
+			//定时器初始化
+			private function initXmlTimer():void{	
+				
+				timer2.addEventListener(TimerEvent.TIMER, initXml);
+				timer2.start(); 
+
+			}
+			//读取Xml中的值
+			private function initXml(event:TimerEvent):void{				
+				var request:URLRequest = new URLRequest("../xml/Station.xml?time="+new Date().getTime());
+				var loader:URLLoader = new URLLoader(request);
+				loader.addEventListener(Event.COMPLETE, loaderCompleteHandler);
+
+			}
+			//向List中注入
+			public function loaderCompleteHandler(event:Event):void{
+
+				var stArr1:ArrayCollection = new ArrayCollection();
+				var stArr2:ArrayCollection = new ArrayCollection();
+				var stArr3:ArrayCollection = new ArrayCollection();
+				var stArr4:ArrayCollection = new ArrayCollection();
+				var stArr5:ArrayCollection = new ArrayCollection();
+				var stArr6:ArrayCollection = new ArrayCollection();
+				var stArr7:ArrayCollection = new ArrayCollection();
+				var stArr8:ArrayCollection = new ArrayCollection();
+				people = new XML(event.target.data);	
+										
+				for(var i:int = 0 ;i<people.children().length();i++ ){
+					var str:String = people.child(i).child(1);
+					var tempInt:int  = int((people.child(i).child(0)+"").substr(1,2)); 
+					switch(tempInt){
+						case 1:stArr1.addItem(str);break;
+						case 2:stArr2.addItem(str);break;
+						case 3:stArr3.addItem(str);break;
+						case 4:stArr4.addItem(str);break;
+						case 5:stArr5.addItem(str);break;
+						case 6:stArr6.addItem(str);break;
+						case 7:stArr7.addItem(str);break;
+						case 8:stArr8.addItem(str);break;
+						default : ;
+					}
+				}
+				var temp:String = stArr7.getItemAt(1).toString(); stArr7.removeItemAt(1); stArr7.addItem("无"); stArr7.addItem(temp);
+				var temp1:String = stArr8.getItemAt(1).toString(); stArr8.removeItemAt(1); stArr8.addItem("无"); stArr8.addItem(temp1);
+				st1.dataProvider = stArr1;st2.dataProvider = stArr2;st3.dataProvider = stArr3;
+				st4.dataProvider = stArr4;st5.dataProvider = stArr5;st6.dataProvider = stArr6;
+				st7.dataProvider = stArr7;st8.dataProvider = stArr8;			
+			}
+
+			//鼠标移动到相应站台时可以显示站台人数		
+			public function mouseOn(lb:spark.components.Label):void{
+				var str:String = null;
+				lb.height = lb.height + 18;
+				
+				if(String("")=="undefined"){
+					//获取xml中的人数显示
+					lb.text =  lb.text+"\n"+"人";
+				}else{									
+					//获取List的值
+					if(lb.id.substr(2,1)=='2'){
+						switch(lb.id.substr(3,1)){
+							case '1':str = st1.dataProvider.getItemAt(1)+"";break;
+							case '2':str = st2.dataProvider.getItemAt(1)+"";break;
+							case '3':str = st3.dataProvider.getItemAt(1)+"";break;
+							case '4':str = st4.dataProvider.getItemAt(1)+"";break;
+							case '5':str = st5.dataProvider.getItemAt(1)+"";break;
+							case '6':str = st6.dataProvider.getItemAt(1)+"";break;
+							default:str = null;
+						}
+					}else{
+						switch(lb.id.substr(3,1)){
+							case '1':str = st1.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '2':str = st2.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '3':str = st3.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '4':str = st4.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '5':str = st5.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '6':str = st6.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '7':str = st7.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '8':str = st8.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							default:str = null;
+						}
+					}
+					lb.text =  lb.text+"\n"+str+"人";
+				}
+			}
+			//鼠标相应站台从移除时回归原来的状态
+			public function mouseOut(e:MouseEvent,str:String):void{			
+				e.target.text = str;
+				e.target.height = 18;
+			}
+			protected function button1_clickHandler(event:MouseEvent):void{	
+				
+				navigateToURL(new URLRequest("../simulate.html"),"_blank"); 
+			}
+
+		]]>
+	</fx:Script>
+	
+	<mx:ViewStack width="1051" height="525" id="admin" backgroundAlpha="0.5" backgroundColor="#20a5e5">
+		<mx:Canvas width="100%" height="100%" id="onland" backgroundAlpha="0.5">	
+			<mx:Panel width="310" height="265" layout="absolute" title="欢迎登录" fontSize="12" fontWeight="normal" x="373" y="100"
+					  verticalAlign="middle" horizontalAlign="center" backgroundAlpha="0.5" backgroundColor="#20a5e5">   
+				<mx:TextInput x="93" y="51" id="username" fontSize="12" restrict="0-9,a-z" maxChars="8" text=""/>   
+				<mx:TextInput x="92" y="95" id="userpsd" fontSize="12" displayAsPassword="true" maxChars="8" restrict="0-9,a-z" text="" />   
+				<mx:Button  label="登录" id="btn1"  fontWeight="normal" fontSize="12" x="122" y="149" click="checkUserPsd()" />   
+				<mx:Label x="32" y="53" text="用户名：" fontSize="12"/>   
+				<mx:Label x="43" y="97" text="密码：" fontSize="12"/>
+			</mx:Panel>
+		</mx:Canvas>
+		
+		<mx:Canvas width="100%" height="100%" id="admin_page">
+			<mx:Button x="37" y="76" label="教室设备" width="150" height="40" fontSize="15" chromeColor="#D5F6FF" 
+					   click="admin_wind.selectedChild=equipment" fontWeight="bold" icon="@Embed(source='../WebRoot/images/manager/equipInfo.png')"/>
+			<mx:Button x="37" y="121" label="预约审核" width="150" height="40" fontSize="15" chromeColor="#D5F6FF"
+					   click="admin_wind.selectedChild=yuYue" fontWeight="bold" icon="@Embed(source='../WebRoot/images/manager/checkAppo.png')"/>
+			<mx:Button x="37" y="167" label="公交发车" width="150" height="40" fontSize="15" chromeColor="#D5F6FF" 
+					   click="admin_wind.selectedChild=bus" fontWeight="bold" icon="@Embed(source='../WebRoot/images/manager/bus.png')"/>
+			<mx:Button x="28" y="443" label="后台模拟程序" width="178" height="40" fontSize="15" chromeColor="#D5F6FF" fontWeight="bold" 
+					   icon="@Embed(source='../WebRoot/images/manager/simulate.png')" click="button1_clickHandler(event)"/>
+									
+			<mx:ViewStack width="837" id="admin_wind" right="0" top="0" bottom="0" backgroundAlpha="0.5" backgroundColor="#20a5e5">	
+				<mx:Canvas width="100%" height="100%" id="equipment" >
+					<s:DropDownList id="equName" x="111" y="28" chromeColor="#D5F6FF" width="108" height="30" prompt="设备选择" fontSize="15" textAlign="center">
+						<s:dataProvider>
+							<s:ArrayList  source="['电脑','投影仪','门禁','荧光灯']"/>
+						</s:dataProvider>
+					</s:DropDownList>
+					<s:DropDownList id="fOrt" x="271" y="28" chromeColor="#D5F6FF" width="142" height="30" prompt="设备损坏情况" fontSize="15" textAlign="center">
+						<s:dataProvider>
+							<s:ArrayList source="['已损坏','情况良好']" />
+						</s:dataProvider>
+					</s:DropDownList>
+					<mx:Button click="EquErrorSele.findEquError()" x="500" y="28" icon="@Embed(source='../WebRoot/images/busLine/look.png')" label="确定" width="100" height="30" chromeColor="#D5F6FF" fontSize="15"/>
+					<mx:DataGrid x="111" y="95" id="equError"  width="615" height="275" dataProvider="{equErrNum}">
+						<mx:columns>
+							<mx:DataGridColumn id="sbbh" headerText="设备编号" labelFunction="operaSbbh"/>
+							<mx:DataGridColumn id="sbmc" headerText="设备名称"  labelFunction="operaSbmc" />
+							<mx:DataGridColumn id="scwz" headerText="所处位置"  labelFunction="operaScwz" />
+							<mx:DataGridColumn id="syzk" headerText="使用状况"  labelFunction="operaSyzk" />
+						</mx:columns>
+					</mx:DataGrid>
+				</mx:Canvas>
+				
+				<mx:Canvas width="100%" height="100%" fontSize="15" id="yuYue">
+					<s:Button x="108" y="37" label="未审核的预约" width="137" height="34" click="clickNoCheck()" chromeColor="#D5F6FF"/>
+					<s:Button x="307" y="37" label="历史审核记录" width="137" height="34" click="clickHistory()"   chromeColor="#D5F6FF"/>
+					<mx:DataGrid id="yyInfo"  dataProvider="{yy}" x="43.55" y="89.55" width="638" textAlign="center" height="273"
+								 itemClick="yyInfo_itemClickHandler(event)" editable="true" >
+						<mx:columns>
+							<mx:DataGridColumn  dataField="yyID"  visible="false" />
+							<mx:DataGridColumn headerText="教室号"  dataField="yyjs" editable="false"/>
+							<mx:DataGridColumn headerText="使用时间" labelFunction="operaSysj" editable="false" />
+							<mx:DataGridColumn headerText="节次" dataField="js" editable="false"/>
+							<mx:DataGridColumn headerText="申请人" labelFunction="operaSqr" editable="false" />
+							<mx:DataGridColumn headerText="所属班级" labelFunction="operaSsbj" editable="false" />
+							<mx:DataGridColumn  headerText="审核状态" labelFunction="operaShzt" width="200" editable="true">
+							</mx:DataGridColumn>
+						</mx:columns>
+					</mx:DataGrid>
+					<mx:Button x="658" y="394"  width="100" height="42" label="确定" chromeColor="#D5F6FF" 
+							   icon="@Embed(source='../WebRoot/images/manager/submit.png')"/>
+					<s:Label x="712" y="133" text="点击审核状态列，修改审核状态" width="78" height="135" fontSize="18"/>
+				</mx:Canvas>
+				<mx:Canvas width="100%" height="100%" id="bus" creationComplete="CarRun(),TimerInit()">
+					<s:Label x="60" y="10" text="站台1"/>
+					<s:Label x="140" y="10" text="站台2"/>
+					<s:Label x="220" y="10" text="站台3"/>
+					<s:Label x="300" y="10" text="站台4"/>
+					<s:Label x="380" y="10" text="站台5"/>
+					<s:Label x="460" y="10" text="站台6"/>
+					<s:Label x="540" y="10" text="站台7"/>
+					<s:Label x="620" y="10" text="站台8"/>
+					<s:List id="st1" x="60"  y="30" width="80" height="68" dataProvider="{peopleN}"/>
+					<s:List id="st2" x="140" y="30" width="80" height="68" dataProvider="{peopleN}" />
+					<s:List id="st3" x="220" y="30" width="80" height="68" dataProvider="{peopleN}" />
+					<s:List id="st4" x="300" y="30" width="80" height="68" dataProvider="{peopleN}" />
+					<s:List id="st5" x="380" y="30" width="80" height="68" dataProvider="{peopleN}" />
+					<s:List id="st6" x="460" y="30" width="80" height="68" dataProvider="{peopleN}" />
+					<s:List id="st7" x="540" y="30" width="80" height="68" dataProvider="{peopleN}" />
+					<s:List id="st8" x="620" y="30" width="80" height="68" dataProvider="{peopleN}" />
+					<mx:Image x="31.3" y="98.75" width="728" height="349" source="com/wgc/images/school_map.png"/>
+					<mx:Image id="bus33" x="87" y="151" source="com/wgc/images/bus1.png" width="19" height="16"/>
+					<mx:Image id="bus66" x="69" y="249" source="com/wgc/images/bus1.png" width="19" height="16"/>
+					<mx:Image id="busExtra" x="63" y="234" source="com/wgc/images/busExtra.png" width="19" height="16"/>
+					<mx:Image id="bus11" x="50" y="247" source="com/wgc/images/bus1.png" width="19" height="16"/>	
+					<mx:Image id="bus44" x="728" y="390" source="com/wgc/images/bus2.png" width="19" height="16"/>
+					<mx:Image id="bus55" x="109" y="153" source="com/wgc/images/bus2.png" width="19" height="16"/>
+					<mx:Image id="bus22" x="725" y="372" source="com/wgc/images/bus2.png" width="19" height="16"/>
+					
+					<s:Label id="lb11" x="88" y="251" text="站台1" width="35" height="18" mouseOver="mouseOn(lb11)" mouseOut="mouseOut(event,'站台1')" 
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					<s:Label id="lb12" x="157" y="147" text="站台2" width="35" height="18" mouseOver="mouseOn(lb12)" mouseOut="mouseOut(event,'站台2')" 
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					<s:Label id="lb13" x="261" y="169" text="站台3" width="35" height="18" mouseOver="mouseOn(lb13)" mouseOut="mouseOut(event,'站台3')" 
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					<s:Label id="lb14" x="385" y="180" text="站台4" width="35" height="18" mouseOver="mouseOn(lb14)" mouseOut="mouseOut(event,'站台4')" 
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					<s:Label id="lb15" x="588" y="198" text="站台5" width="35" height="18" mouseOver="mouseOn(lb15)" mouseOut="mouseOut(event,'站台5')" 
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					<s:Label id="lb16" x="683" y="223" text="站台6" width="35" height="18" mouseOver="mouseOn(lb16)" mouseOut="mouseOut(event,'站台6')" 
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>			
+					<s:Label id="lb17" x="683" y="311" text="站台7" width="35" height="18" mouseOver="mouseOn(lb17)" mouseOut="mouseOut(event,'站台7')" 
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					<s:Label id="lb18" x="731" y="353" text="站台8" width="35" height="18" mouseOver="mouseOn(lb18)" mouseOut="mouseOut(event,'站台8')" 
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					
+					<s:Label id="lb21" x="130" y="251" text="站台1" width="35" height="18" mouseOver="mouseOn(lb21)" mouseOut="mouseOut(event,'站台1')" 
+							 fontWeight="bold" backgroundColor="#05C7F8" color="#FBFAFA"/>
+					<s:Label id="lb22" x="251" y="252" text="站台2" width="35" height="18" mouseOver="mouseOn(lb22)" mouseOut="mouseOut(event,'站台2')" 
+							 fontWeight="bold" backgroundColor="#05C7F8" color="#FBFAFA"/>
+					<s:Label id="lb23" x="305" y="289" text="站台3" width="35" height="18" mouseOver="mouseOn(lb23)" mouseOut="mouseOut(event,'站台3')" 
+							 fontWeight="bold" backgroundColor="#05C7F8" color="#FBFAFA"/>
+					<s:Label id="lb24" x="398" y="294" text="站台4" width="35" height="18" mouseOver="mouseOn(lb24)" mouseOut="mouseOut(event,'站台4')" 
+							 fontWeight="bold" backgroundColor="#05C7F8" color="#FBFAFA"/>
+					<s:Label id="lb25" x="577" y="297" text="站台5" width="35" height="18" mouseOver="mouseOn(lb25)" mouseOut="mouseOut(event,'站台5')" 
+							 fontWeight="bold" backgroundColor="#05C7F8" color="#FBFAFA"/>
+					<s:Label id="lb26" x="706" y="323" text="站台6" width="35" height="18" mouseOver="mouseOn(lb26)" mouseOut="mouseOut(event,'站台6')" 
+							 fontWeight="bold" backgroundColor="#05C7F8" color="#FBFAFA"/>				
+					
+					<s:Label id="lb31" x="53" y="151" text="站台1" width="35" height="18" mouseOver="mouseOn(lb31)" mouseOut="mouseOut(event,'站台1')"  
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<s:Label id="lb32" x="139" y="161" text="站台2" width="35" height="18" mouseOver="mouseOn(lb32)" mouseOut="mouseOut(event,'站台2')" 
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<s:Label id="lb33" x="277" y="177" text="站台3" width="35" height="18" mouseOver="mouseOn(lb33)" mouseOut="mouseOut(event,'站台3')" 
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<s:Label id="lb34" x="280" y="256" text="站台4" width="35" height="18" mouseOver="mouseOn(lb34)" mouseOut="mouseOut(event,'站台4')" 
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<s:Label id="lb35" x="300" y="343" text="站台5" width="35" height="18" mouseOver="mouseOn(lb35)" mouseOut="mouseOut(event,'站台5')" 
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<s:Label id="lb36" x="240" y="370" text="站台6" width="35" height="18" mouseOver="mouseOn(lb36)" mouseOut="mouseOut(event,'站台6')" 
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<s:Label id="lb37" x="145" y="321" text="站台7" width="35" height="18" mouseOver="mouseOn(lb37)" mouseOut="mouseOut(event,'站台7')" 
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>							
+					<s:Label id="lb38" x="94" y="266" text="站台8" width="35" height="18" mouseOver="mouseOn(lb38)" mouseOut="mouseOut(event,'站台8')" 
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+				</mx:Canvas>
+			</mx:ViewStack>
+		</mx:Canvas>
+	</mx:ViewStack>
+</s:BorderContainer>

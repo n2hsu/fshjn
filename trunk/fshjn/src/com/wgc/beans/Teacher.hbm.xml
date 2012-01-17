@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.wgc.beans.Teacher" table="teacher_info">
+        <id name="jgh" type="java.lang.String">
+            <column name="jgh" length="15" />
+            <generator class="assigned" />
+        </id>
+        <property name="xm" type="java.lang.String">
+            <column name="xm" length="20" not-null="true" />
+        </property>
+        <property name="xb" type="java.lang.String">
+            <column name="xb" length="2" not-null="true" />
+        </property>
+        <property name="xy" type="java.lang.String">
+            <column name="xy" length="25" not-null="true" />
+        </property>
+        <property name="csny" type="java.sql.Timestamp">
+            <column name="csny" length="16" not-null="true" />
+        </property>
+        <property name="lxfs" type="java.lang.String">
+            <column name="lxfs" length="15" />
+        </property>
+    </class>
+</hibernate-mapping>

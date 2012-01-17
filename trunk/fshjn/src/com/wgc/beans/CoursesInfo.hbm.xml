@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.wgc.beans.CoursesInfo" table="course_list" >
+        <id name="kcID" type="java.lang.Long">
+            <column name="kcID" />
+            <generator class="assigned" />
+        </id>
+        <many-to-one name="teacher" class="com.wgc.beans.Teacher" fetch="join" lazy="false">
+            <column name="jgh" length="15" not-null="true" />
+        </many-to-one>
+        <many-to-one name="course" class="com.wgc.beans.Course" fetch="join" lazy="false">
+            <column name="kch" length="6" not-null="true" />
+        </many-to-one>
+        <property name="js" type="java.lang.Short">
+            <column name="js" not-null="true" />
+        </property>
+        <property name="xq" type="java.lang.String">
+            <column name="xq" length="10" not-null="true" />
+        </property>
+        <property name="bjm" type="java.lang.String">
+            <column name="bjm" length="10" not-null="true" />
+        </property>
+        <property name="jsh" type="java.lang.String">
+            <column name="jsh" length="4" not-null="true" />
+        </property>
+    </class>
+</hibernate-mapping>
