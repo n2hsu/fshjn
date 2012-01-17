@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" 
+				   width="1051" height="525" creationComplete="initEvent()" backgroundAlpha="0.5" backgroundColor="#20a5e5">
+	<fx:Declarations>
+		<!-- 教室使用状态查询-->
+		<s:RemoteObject id="courseInfo" destination="selectCourseInfo" endpoint="../messagebroker/amf"
+						fault="courseInfo_faultHandler(event)">
+			<s:method name="selectClassRoCourses" result="classRoCourseResultHandler(event)">
+				<s:arguments>
+					<lm>{lm}</lm>
+				</s:arguments>
+			</s:method>
+		</s:RemoteObject>
+		<!--车位查询 -->	
+		<s:RemoteObject id="carNum" destination="selectCarPark" endpoint="../messagebroker/amf"
+						fault="carNum_faultHandler(event)">
+			<s:method name="findCarNum" result="findCarNumResultHandler(event)">
+				<s:arguments>
+					<lm>{lm}</lm>
+				</s:arguments>
+			</s:method>
+		</s:RemoteObject>
+		<!-- 教室设备状态查询 -->
+		<s:RemoteObject id="jxlEqu" destination="SenserSele" endpoint="../messagebroker/amf"
+						 fault="jxlEqu_faultHandler(event)">
+			<s:method name="findByLm" result="findJxlEquResultHandler(event)">
+				<s:arguments>
+					<lm>{lm}</lm>
+				</s:arguments>
+			</s:method>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.wgc.asFolder.GobalVaris;
+			import com.wgc.asFolder.NoClasses;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import org.osmf.events.TimeEvent;
+			
+			[Bindable] private var classesRoInfo:ArrayCollection = new ArrayCollection;
+			//随时响应不同教学楼的页面点击转换
+			private var timer:Timer = new Timer(300);
+			//定时更新教学楼数据
+			private var timer2:Timer = new Timer(3000);
+			private var timer3:Timer = new Timer(3000);
+			
+			[Bindable] private var lm:String = "";
+			[Bindable] private var parkArr:ArrayCollection = new ArrayCollection;
+			private var txt:String = "请按照标志牌停放车辆，遵守规章制度，谢谢合作！";
+			[Bindable] private var equInfo:ArrayCollection = new ArrayCollection;
+			private var classStu:XML;
+			[Bindable] private var noClass:ArrayCollection = new ArrayCollection();
+			private var noClassAs:NoClasses;
+
+					
+			//数字显示停车场剩余数
+			private function findCarNumResultHandler(event:ResultEvent):void{
+				parkArr =event.result as ArrayCollection;	
+				var NowParkTemp:int = 30-parkArr.getItemAt(0).yycws;
+				var digit:String,ge:String;
+				
+				if(NowParkTemp<10){
+					digit = "0";
+					ge = (NowParkTemp+"").charAt(0);
+				}else{
+					digit = (NowParkTemp+"").charAt(0);
+					ge = (NowParkTemp+"").charAt(1);
+				}
+				digitImg.source = "com/wgc/images/0"+digit+".png";
+				geImg.source = "com/wgc/images/"+ge+".png";
+				if(NowParkTemp>20){
+					advice.text="此处空余车位数量充足，您可以在此停车场停车。\n"+txt;
+				}else{
+					if(NowParkTemp>10){
+						advice.text="此处空余车位数量适中，请根据您的实际情况有选择的在此停车。\n"+txt;
+					}else{
+						advice.text="此处空余车位不足，建议您选择其他停车场停车。\n"+txt;
+					}
+				}
+			}
+			//定时器1刷新页面和数据
+			private function initEvent():void{
+				//页面
+				timer.addEventListener(TimerEvent.TIMER,clickMap_CompleteHandler);
+				timer.start();
+				//数据
+				timer2.addEventListener(TimerEvent.TIMER,dataSearch);
+				timer2.start();
+				timer3.addEventListener(TimerEvent.TIMER,classesNum);
+				timer3.start();
+
+			}
+			protected function clickMap_CompleteHandler(event:Event):void{
+				title.text = GobalVaris.titleStr;
+				lm = GobalVaris.titleStr;
+			}
+			//传递远程方法参数
+			private function dataSearch(event:Event):void{	
+				carNum.findCarNum(lm);
+				courseInfo.selectClassRoCourses(lm);	
+			}
+			//课程查询返回处理
+			private function classRoCourseResultHandler(event:ResultEvent):void{	
+				classesRoInfo = event.result as ArrayCollection;
+			}
+
+			private function operaSyzt(item:Object,column:DataGridColumn):String{
+				if(item.bjm!=""||item.bjm!=null){
+					return "上课中";
+				}else{
+					return "上课中";
+				}
+			}
+			//设备所属教室
+			private function operaJsm(item:Object,column:DataGridColumn):String{	
+				return (item.cgqmc+"").substr(1,3);	
+			}
+			//设备状态转换
+			private function operaSfsh(item:Object,column:DataGridColumn):String{	
+				if(item.sfsh=="0"){
+					return "工作正常";
+				}else{
+					return "设备故障";
+				}
+				
+			}
+			//设备名称转换
+			private function operaSbmc(item:Object,column:DataGridColumn):String{
+			
+				if(item.ss.cgqlxID==1){
+					return "电脑";
+				}else{
+					if(item.ss.cgqlxID==5){
+						return "投影仪";
+					}else{
+						if(item.ss.cgqlxID==3){
+							return "电扇";
+						}else{
+							if(item.ss.cgqlxID==12){
+								return "电脑";
+							}else{
+								if(item.ss.cgqlxID==6){
+									return "门禁";
+								}else{
+									return null;
+								}
+							}
+						}
+					}
+				}	
+			}
+			//设备信息获取
+			private function findJxlEquResultHandler(event:ResultEvent):void{
+				equInfo = event.result as ArrayCollection;
+			}
+			//非上课教室人数显示
+			private function classesNum(event:Event):void{
+
+				var urlRqu:URLRequest = new URLRequest("../xml/ClassStu.xml?time="+new Date().getTime());
+				var urlLoa:URLLoader = new URLLoader(urlRqu);
+				urlLoa.addEventListener(Event.COMPLETE,readXml);
+				
+			}
+			//读取XML中的符合点击教学楼的信息
+			private function readXml(event:Event):void{			
+			//1信息楼2材料楼3文学楼4外语楼5经济楼
+				var i:String;
+				if(lm=="信息楼"){
+					i = 1+"";
+				}if(lm=="材料楼"){
+					i = 2+"";
+				}if(lm=="文学楼"){
+					i = 3+"";
+				}if(lm=="外语楼"){
+					i = 4+"";
+				}if(lm=="经济楼"){
+					i = 5+"";
+				}
+				classStu = new XML(event.target.data);							
+				for(var m:int ; m<classStu.children().length() ;m++ ){
+					if((classStu.child(m).child(0)+"").substr(0,1)==i){
+						var jshTemp:String = (classStu.child(m).child(0)+"").substr(1,3);
+						var jsrsTemp:String = classStu.child(m).child(1)+"";
+						noClass.addItem(new NoClasses(jshTemp,jsrsTemp));
+					}else{}
+				}
+			}
+			//错误信息提示
+			private function courseInfo_faultHandler(event:FaultEvent):void{
+				Alert.show("课程信息获取失败，请重试！","警告");
+			}
+			protected function carNum_faultHandler(event:FaultEvent):void{
+				Alert.show("车位数量查询失败，请重试！","警告");
+			}
+			protected function jxlEqu_faultHandler(event:FaultEvent):void{
+				Alert.show("设备信息获取失败，请重试！","警告");
+			}
+		]]>
+	</fx:Script>
+	<s:Label id="title" text="教学楼" width="102" height="25" fontSize="20" top="27" left="66"/>
+	<s:ButtonBar  x="184" y="77" dataProvider="{classInfo}" width="223" height="37" 
+				   id="btBar" click="jxlEqu.findByLm()"/>
+	<mx:ViewStack x="82" y="150" id="classInfo" width="459" height="338">	
+		<mx:Canvas id="jsInfo" width="100%" height="100%" x="185" y="148" label="教室信息">
+			<mx:DataGrid id="classing" dataProvider="{classesRoInfo}" top="21" left="0" bottom="162" right="20" toolTip="上课教室中的上课班级、上课课程">
+				<mx:columns>
+					<mx:DataGridColumn headerText="教室号" dataField="jsh"/>
+					<mx:DataGridColumn headerText="使用状态" labelFunction="operaSyzt"/>
+					<mx:DataGridColumn headerText="课程名称" dataField="course.kcm"/>
+					<mx:DataGridColumn headerText="上课班级" dataField="bjm"/>
+				</mx:columns> 
+			</mx:DataGrid>
+			<mx:DataGrid id="NoClassing" dataProvider="{noClass}" x="0" y="197" height="141" width="439" toolTip="自习中或者预约中的相关信息">
+				<mx:columns>
+					<mx:DataGridColumn headerText="教室号" dataField="jsh"/>
+					<mx:DataGridColumn headerText="使用状态" dataField="syzt"/>
+					<mx:DataGridColumn headerText="教室人数" dataField="jsrs"/>
+				</mx:columns>
+			</mx:DataGrid>
+			<s:Label x="4" y="1" text="上课教室" width="51" height="23"/>
+			<s:Label x="6" y="184" text="非上课教室"/>
+		</mx:Canvas>
+		<mx:Canvas  id="sbInfo" toolTip="教室中相关设备的使用状态、位置、设备号码" width="100%" height="100%" label="设备信息">
+			<mx:DataGrid top="0" left="0" right="0" bottom="0" dataProvider="{equInfo}" width="439">
+				<mx:columns>
+					<mx:DataGridColumn headerText="设备号"  dataField="cgqID"/>
+					<mx:DataGridColumn headerText="设备名称" labelFunction="operaSbmc"/>
+					<mx:DataGridColumn headerText="所属教室" labelFunction="operaJsm"/>
+					<mx:DataGridColumn headerText="是否损坏" labelFunction="operaSfsh"/>
+				</mx:columns>
+			</mx:DataGrid>	
+		</mx:Canvas>
+	</mx:ViewStack>
+	<s:Label x="683" y="82" text="教学楼停车场信息" width="188" height="28" fontSize="18"/>
+	
+	<mx:VRule x="624" y="47" height="428"/>
+	<s:Label x="760" y="140" text="剩余车位数" fontSize="16"/>
+	<s:Button x="886" y="299" label="刷新" fontSize="18"/>
+	<mx:Image id="digitImg" x="732" y="169" width="78" height="116" source="com/wgc/images/00.png"/>
+	<mx:Image id="geImg" x="827" y="168" width="76" height="118" source="com/wgc/images/00.png"/>
+	<s:TextArea id="advice" x="681" y="342" width="233" height="123" fontSize="16" contentBackgroundColor="#C6F5FC"/>
+	<s:Label  x="659" y="306" text="建议：" width="90" height="25" fontSize="16"/>
+	<s:Label x="73" y="54" text="点击查看各教室使用状态和设备损坏情况" width="124" height="33"/>
+</s:BorderContainer>

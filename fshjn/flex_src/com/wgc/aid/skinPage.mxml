@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:fb="http://ns.adobe.com/flashbuilder/2009" 
+		xmlns:mx="library://ns.adobe.com/flex/mx"
+		>
+	
+	<fx:Metadata>
+		<![CDATA[[
+		HostComponent("spark.components.Application")]
+		]]>
+	</fx:Metadata> 	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="disabled" />	
+	</s:states>
+	
+	<!-- layer 1: control bar fill -->
+	<s:Rect left="0" right="0" top="0" bottom="0" >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="haloBlue" />
+				<s:GradientEntry color="white" />
+				
+			</s:LinearGradient>
+			
+		</s:fill>
+	</s:Rect>
+	
+	<!--- @copy spark.components.SkinnableContainer#contentGroup -->
+	<s:Group id="contentGroup"  left="0" right="0" top="0" bottom="0"  >
+		<mx:Image includeIn="normal" source="com/wgc/images/cloud1.png" height="252"  width="486"  horizontalCenter="0"/>
+		<mx:Image includeIn="normal" source="com/wgc/images/cloud2.png" width="449" height="192" right="-63" top="0"/>
+		<mx:Image includeIn="normal" y="90.1" width="406" height="201" source="com/wgc/images/cloud3.png" left="0" alpha="0.7"/>
+	</s:Group>
+	
+</s:Skin>

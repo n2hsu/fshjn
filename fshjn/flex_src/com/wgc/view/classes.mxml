@@ -1,0 +1,875 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" width="1051" height="525"
+				   creationComplete="initabc()" currentState="E">
+	<fx:Declarations>
+		<s:Parallel id="showEff">
+			<s:Rotate3D angleXFrom="90" angleXTo="0" />
+			<s:Fade alphaFrom="0.0" alphaTo="1.0" />
+		</s:Parallel>
+		<s:Parallel id="hideEff">
+			<s:Rotate3D angleXFrom="0" angleXTo="90" />
+			<s:Fade alphaFrom="1.0" alphaTo="0.0" />
+		</s:Parallel>
+		<!--风扇偏转-->
+		<mx:Rotate id="rotate1"  angleFrom="-90" angleTo="-90" duration="3000"/>
+		<mx:Rotate id="rotate2"  angleFrom="-90" angleTo="-90" duration="3000"/>
+		<mx:Rotate id="rotate3"  angleFrom="-90" angleTo="-90" duration="3000"/>
+		<mx:Rotate id="rotate4"  angleFrom="-90" angleTo="-90" duration="3000"/>
+		<mx:Rotate id="rotate5"  angleFrom="-90" angleTo="-90" duration="3000"/>
+		<mx:Rotate id="rotate6"  angleFrom="-90" angleTo="-90" duration="3000"/> 
+		<mx:Rotate id="rotate7"  angleFrom="-120" angleTo="-120" duration="3000"/>
+		<!--教室预约 -->
+		<mx:DateFormatter id="yysjForm" formatString="YYYY-MM-DD 00:00:00" error="日期格式化错误" />
+		<mx:Validator id="ynameReq" required="true" source="{yname}" requiredFieldError="您必须填入姓名" property="text"/>
+		<mx:Validator id="stuIDReq" required="true" source="{stuID}" requiredFieldError="您必须填入学生证号" property="text"/>
+
+		<s:RemoteObject id="save" destination="saveAppo" endpoint="../messagebroker/amf"
+						fault="save_faultHandler(event)" showBusyCursor="true" >
+			<s:method  name="saveRecord" result="saveRecordResult(event)">
+				<s:arguments>
+					<xm>{yname.text}</xm>
+					<xh>{stuID.text}</xh>
+					<jsh>{(buildCombo.selectedIndex+1)+jsh.selectedItem+fjhAppo.selectedItem}</jsh>
+					<jc>{js.selectedItem}</jc>
+					<yysj>{yysjForm.format(yysj.selectedDate)}</yysj>
+					<lxfs>{phone.text}</lxfs>
+				</s:arguments> 
+			</s:method>
+		</s:RemoteObject>
+		<!-- 课程表查询-->	<!-- 当前上课信息-->
+		<s:RemoteObject id="courseInfo" destination="selectCourseInfo" endpoint="../messagebroker/amf"
+						fault="courseInfo_faultHandler(event)">
+			<s:method name="selectCour" result="courseResultHandler(event)">
+				<s:arguments>
+					<jsh>{(lm.selectedIndex+1)+lc.selectedItem+fjh.selectedItem}</jsh>
+					<jc>{jc.selectedItem}</jc>
+					<xq>{zc.selectedItem}</xq>
+				</s:arguments>
+			</s:method>
+			<s:method name="selectClassCour" result="classRoResultHandler(event)">
+				<s:arguments>
+					<jsh>{(jxlmJscx.selectedIndex+1)+lcJscx.selectedItem+fjJscx.selectedItem}</jsh>
+				</s:arguments>
+			</s:method>
+		</s:RemoteObject>
+		<!--学生查看预约审核情况 远程调用-->
+		<s:RemoteObject id="SearchShzt" destination="selectAppo" endpoint="../messagebroker/amf"
+						fault="SearchShzt_faultHandler(event)">
+			<s:method name="findByXhYysj" result="findByXh(event)">
+				<s:arguments>
+					<xh>{xhAppo.text}</xh>
+					<xm>{xmAppo.text}</xm>
+					<yysj>{yysjAppo.text}</yysj>
+				</s:arguments>
+			</s:method>
+		</s:RemoteObject>
+		<!--电脑传感器信息查询 ,调用selectSenser.findByLxMc()-->
+		<s:RemoteObject id="selectSenser" destination="SenserSele" endpoint="../messagebroker/amf"
+						fault="selectSenser_faultHandler(event)">
+			<s:method name="findByLxMc" result="findSenserInfo(event)">
+				<s:arguments>
+					<mc>{jshEqu}</mc>
+					<lx>{cgqlxID}</lx>
+				</s:arguments>
+			</s:method>
+		</s:RemoteObject>
+		<!--投影仪传感器信息查询 ,调用selectSenser.findByLxMc()-->
+		<s:RemoteObject id="selectSenser1" destination="SenserSele" endpoint="../messagebroker/amf"
+						fault="selectSenser_faultHandler(event)">
+			<s:method name="findByLxMc1" result="findSenserInfo1(event)">
+				<s:arguments>
+					<mc>{jshEqu}</mc>
+					<lx>{cgqlxID1}</lx>
+				</s:arguments>
+			</s:method>
+		</s:RemoteObject>
+		<!-- 教师信息核对查询-->
+		<s:RemoteObject id="checkTeacInfo" destination="selectTeac" endpoint="../messagebroker/amf"
+						fault="checkTeacInfo_faultHandler(event)">
+			<s:method  name="checkTeacher" result="checkTeacherResultHandler(event)" />
+		</s:RemoteObject>
+		<!-- 考勤信息查询-->
+		<s:RemoteObject id="attendanceSelec" destination="selectAttendance">
+			<s:method name="findByQqjl" result="findByQqjlResultHandler(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			
+			import flash.media.SoundMixer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.collections.IList;
+			import mx.controls.Alert;
+			import mx.effects.easing.*;
+			import mx.events.CloseEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.DropDownEvent;
+			
+			[Bindable]	private var lmc:ArrayList = new ArrayList(["信息楼","材料楼","文学楼","外语楼","经济楼"]);
+			[Bindable]	private var lcS:ArrayCollection = new ArrayCollection(['1','2','3','4','5']); 
+			[Bindable]	private var fjS:ArrayCollection = new ArrayCollection(['01','02','03','04','05','06','07','08','09','10']); 
+			[Bindable]	private var jch:ArrayCollection = new ArrayCollection(['1','2','3','4','5']);
+			[Bindable]	private var zcArr:ArrayCollection = new ArrayCollection(['周一','周二','周三','周四','周五']);
+			[Bindable]	private var resultData:ArrayCollection;
+			[Bindable]	private var date:Date = new Date();
+			[Bindable]	private var cgqlxID:int;
+			[Bindable]	private var cgqlxID1:int;
+			[Bindable]	private var jshEqu:String;
+			private var classRoResult:ArrayCollection;
+			[Bindable] private var nextCourses:ArrayCollection = new ArrayCollection;
+			
+			
+			private static var begin:int,b:int;
+			private var end:int=-90,e:int=-120;
+			private var i:int=0,comsh:int,prosh:int;
+			private var classtem:int,comptem:int,projectortem:int,classstu:int;
+			public var xmlclass:XML,xmlcomputer:XML,xmlprojector:XML,xmlClassStu:XML,xmlbroke:XML;
+			private var timer:Timer = new Timer(5000);   //Classtem.xml,Comptem.xml,Projector.xml
+			private var timer1:Timer = new Timer(5000);  //Brokeinto.xml
+			private var timer2:Timer = new Timer(5000);  //ClassStu.xml
+			private var timer3:Timer = new Timer(5000);  //音乐播放
+			private var senser:ArrayCollection = new ArrayCollection;
+			private var senser1:ArrayCollection = new ArrayCollection;
+			[Bindable] private var attendance:ArrayCollection = new ArrayCollection;
+
+			private var abc:String,d:int=0,f:int=0,f1:int=0;
+			private var sound:Sound; 
+			
+			private function initabc():void{
+				timer1.addEventListener(TimerEvent.TIMER,brokexml);
+				timer1.start();			
+			}
+			
+			private function  brokexml(event:TimerEvent):void{
+				var value:Number = new Date().getTime();
+				var urlRequest3:URLRequest = new URLRequest("../xml/Brokeinto.xml?time="+value);			
+				var urlLoader3:URLLoader = new URLLoader(urlRequest3);				
+				urlLoader3.addEventListener(Event.COMPLETE,Classlightcomplete);	
+			}
+			
+			private function Classlightcomplete(event:Event):void{
+				xmlbroke = new XML(event.target.data);			
+				if(xmlbroke.child(1)==0){
+					if(d == 0){
+						d=1;f=0;
+						timer3.addEventListener(TimerEvent.TIMER,soundplay);
+						timer3.start();						
+					}
+				}else{
+					d=0; f1=0; timer3.stop();
+					if(f == 0){
+						f=1;
+						swfloader.load("com/wgc/images/door.png");
+					}
+					txt2.text="当前情况一切正常！！";
+				}
+			}
+			
+			private function  soundplay(event:TimerEvent):void{
+				sound = new Sound(new URLRequest("com/wgc/swf/sound.mp3"));
+				sound.play();
+				if(f1==0){
+					f1=1;
+					swfloader.load("com/wgc/swf/door_open.swf");
+					txt2.text="警告！"+xmlbroke.child(0)+"有人闯入！";
+					Alert.show(xmlbroke.child(0)+"有人闯入","警告");
+				}
+			}
+			
+			protected function bt1_clickHandler():void
+			{
+				jshEqu = (dropdown1.selectedIndex+1) + dropdown2.selectedItem + dropdown3.selectedItem;
+				title1.title = jshEqu + "教室设备信息";
+				timer.addEventListener(TimerEvent.TIMER,readxml);
+				timer.start();
+				
+			}
+			
+			private function  readxml(event:TimerEvent):void{
+				var value:Number = new Date().getTime();
+				var urlRequest:URLRequest = new URLRequest("../xml/Classtem.xml?time="+value);
+				var urlRequest1:URLRequest = new URLRequest("../xml/Comptem.xml?time="+value);
+				var urlRequest2:URLRequest = new URLRequest("../xml/Projector.xml?time="+value);
+				
+				var urlLoader:URLLoader = new URLLoader(urlRequest);
+				var urlLoader1:URLLoader = new URLLoader(urlRequest1);
+				var urlLoader2:URLLoader = new URLLoader(urlRequest2);		
+				
+				urlLoader.addEventListener(Event.COMPLETE,Classtemcomplete);
+				urlLoader1.addEventListener(Event.COMPLETE,Comptemcomplete);
+				urlLoader2.addEventListener(Event.COMPLETE,Projectortemcomplete);
+			}
+			
+			private function Projectortemcomplete(event:Event):void{
+				xmlprojector = new XML(event.target.data);
+				for(i=0;i<xmlprojector.children().length();i++){
+					if(xmlprojector.child(i).child(0)==jshEqu){
+						projectortem = xmlprojector.child(i).child(1);
+						break;
+					}
+				}
+				cgqlxID1 = 2;
+				selectSenser1.findByLxMc1();
+				prosh = senser.getItemAt(0).sfsh;
+				//Alert.show("prosh="+prosh,"");
+				//img1为projectorwork，img2为projectorclose，img3为projectorbroken
+				if(prosh==0){
+					if(projectortem==20){
+						img1.setVisible(false);
+						img2.setVisible(true);
+						img3.setVisible(false);
+					}
+					if(projectortem>59&&projectortem<81){
+						img1.setVisible(true);
+						img2.setVisible(false);
+						img3.setVisible(false);
+					}
+				}else{
+					img1.setVisible(false);
+					img2.setVisible(false);
+					img3.setVisible(true);			
+				}
+			}	
+			
+			private function Comptemcomplete(event:Event):void{
+				xmlcomputer = new XML(event.target.data);
+				for(i=0;i<xmlcomputer.children().length();i++){
+					if(xmlcomputer.child(i).child(0)==jshEqu){
+						comptem = xmlcomputer.child(i).child(1);
+						break;
+					}					 
+				}
+				cgqlxID = 1;
+				selectSenser.findByLxMc();				
+				comsh = senser.getItemAt(0).sfsh;
+				//Alert.show("comsh="+comsh,"");
+				//img11为computerwork，img22为computeclose，img33为computebroken
+				if(comsh==0){
+					if(comptem==20){
+						img11.setVisible(false);
+						img22.setVisible(true);
+						img33.setVisible(false);
+					}
+					if(comptem>49&&comptem<71){
+						img11.setVisible(true);
+						img22.setVisible(false);
+						img33.setVisible(false);
+					}
+				}else{
+					img11.setVisible(false);
+					img22.setVisible(false);
+					img33.setVisible(true);
+				}	
+				
+			}
+			
+			private function Classtemcomplete(event:Event):void{
+				xmlclass = new XML(event.target.data);
+				for(i=0;i<xmlclass.children().length();i++){
+					if(xmlclass.child(i).child(0)==jshEqu){
+						classtem = xmlclass.child(i).child(1);
+						break;
+					}					 
+				}
+				
+				txt1.text = "当前温度为："+ classtem.toString()+"度";
+				if(classtem>30)
+					txt1.text = txt1.text + " ，要注意防暑哦！！";
+				b = e;
+				e = classtem*3-30;
+				rotate7.angleFrom=b; rotate7.angleTo=e; rotate7.play();
+				
+				begin = end;
+				if(classtem<=20)
+					end = -90;
+				if(classtem>20&&classtem<25)
+					end = -60;
+				if(classtem>=25&&classtem<30)
+					end = -30;
+				if(classtem>=30&&classtem<35)
+					end = 0;
+				if(classtem>=35&&classtem<40)
+					end = 30;
+				if(classtem>=40)
+					end = 60; 
+				
+				rotate1.angleFrom=begin; rotate1.angleTo=end; rotate1.play();
+				rotate2.angleFrom=begin; rotate2.angleTo=end; rotate2.play();
+				rotate3.angleFrom=begin; rotate3.angleTo=end; rotate3.play();
+				rotate4.angleFrom=begin; rotate4.angleTo=end; rotate4.play();
+				rotate5.angleFrom=begin; rotate5.angleTo=end; rotate5.play();
+				rotate6.angleFrom=begin; rotate6.angleTo=end; rotate6.play();
+			}	
+			
+			
+			//Rainbow
+			
+			private function ClassStu(event:TimerEvent):void{
+				var value:Number = new Date().getTime();
+				var urlRequest4:URLRequest = new URLRequest("../xml/ClassStu.xml?time="+value);
+				var urlLoader4:URLLoader = new URLLoader(urlRequest4);
+				
+				urlLoader4.addEventListener(Event.COMPLETE,ClassStucomplete);
+				
+			}
+			
+			private function ClassStucomplete(event:Event):void{
+				xmlClassStu = new XML(event.target.data);
+				for(i=0;i<xmlClassStu.children().length();i++){
+					if(xmlClassStu.child(i).child(0)==abc){
+						classstu = xmlClassStu.child(i).child(1);
+						break;
+					}					 
+				}
+				if(classRoResult.length==0){
+					
+					if(classstu<=30)
+						jsInfo.text = "当前教室没有上课,且当前使用人数很少，建议您在此上自习！！";
+					if(classstu>30&&classstu<=50)
+						jsInfo.text = "当前教室没有上课,且当前使用人数不是很多，您可以在此上自习！！";
+					if(classstu>50&&classstu<=100)
+						jsInfo.text = "当前教室没有上课,但当前使用人数太多，建议您不要在此上自习！！";
+					
+				}else{
+					jsInfo.text = "当前教室正在上课。上课教师："+"上课班级"+"上课课程：";
+				}
+				
+				
+				lb1.text = classstu+"人";
+				bar.setProgress(classstu,130);
+				var percent:int = (classstu*100/130);
+				bar.label = percent.toString() + "%";			
+			}			
+			private function saveRecordResult(event:ResultEvent):void{
+				if(event.result as Boolean==true){
+					Alert.show("预约申请成功","");
+				}else{
+					Alert.show("申请失败","");
+				}
+			}
+			//课程表查询结果处理
+			private function courseResultHandler(event:ResultEvent):void{
+				
+				resultData = event.result as ArrayCollection;	
+				if(resultData.length==0){
+					Alert.show("没有相关数据","错误");
+				}
+			}
+			//课程表查询DataGrid处理
+			private function jshTrans(item:Object,Column:DataGridColumn):String{
+				var lmTemp:String;
+				switch(parseInt((item.jsh+"").substr(0,1))){
+					case 1:lmTemp = "信息楼";break;
+					case 2:lmTemp = "材料楼";break;
+					case 3:lmTemp = "文学楼";break;
+					case 4:lmTemp = "外语楼";break;
+					case 5:lmTemp = "经济楼";break;
+				}
+				return  lmTemp+(item.jsh+"").substr(1,3);
+			}
+			//处理时间的转换
+			private function operaSkrq(item:Object,column:DataGridColumn):String{
+				
+				var dateF:DateFormatter = new DateFormatter;
+				dateF.formatString = "YYYY-MM-DD HH:NN:SS";
+				return dateF.format(item.skrq as Date);
+			}
+			
+			//查询教室课程信息结果返回
+			private function classRoResultHandler(event:ResultEvent):void{
+				
+				classRoResult = new ArrayCollection;
+				//处理下节课的显示，默认为本节次课程
+				nextCourses = event.result as ArrayCollection;
+				if(nextCourses.length==0){
+					nextCourse.text = "本周内此教室没课。"
+				}else{
+					nextCourse.text = "本周内此教室下节课的相关信息：\n课程名："+ nextCourses.getItemAt(0).course.kcm+
+						"\n授课教师："+nextCourses.getItemAt(0).teacher.xm+"\n上课班级："+nextCourses.getItemAt(0).teacher.bjm;
+				}
+				
+				abc = (jxlmJscx.selectedIndex+1)+lcJscx.selectedItem+fjJscx.selectedItem;//abc代表教学楼号
+				cr_if.title = (jxlmJscx.selectedIndex+1)+"J"+lcJscx.selectedItem+fjJscx.selectedItem+"教室信息";
+				timer2.addEventListener(TimerEvent.TIMER,ClassStu);
+				timer2.start();
+
+			}			
+			
+			//查询预约审核情况结果返回
+			private function findByXh(event:ResultEvent):void{
+				
+				var arr:ArrayCollection = event.result as ArrayCollection;
+				var strTemp:String = arr.getItemAt(0).shzt;			
+				if(strTemp=="false"){
+					Alert.show("很抱歉，您的预约还没有通过审核。","提示");
+				}else{
+					Alert.show("您的预约审核通过了!","提示");
+				}
+			}
+			//查询电脑传感器信息结果返回
+			private function findSenserInfo(event:ResultEvent):void{
+					senser = event.result as ArrayCollection;
+			}
+			//查询投影仪传感器信息结果返回
+			private function findSenserInfo1(event:ResultEvent):void{
+					senser1 = event.result as ArrayCollection;				
+			}
+			//dropDownList不为空
+			protected function zcComb_closeHandler(event:DropDownEvent):void	{				
+				if(String(zcComb.selectedItem)=="undefined"){
+					Alert.show("请选择一周其中的一天","提示");
+				}
+			}
+			protected function jcComb_closeHandler(event:DropDownEvent):void{
+				if(String(jcComb.selectedItem)=="undefined"){
+					Alert.show("请至少选择一节课","提示");					
+				}
+			}
+			//验证教师信息成功结果返回
+			private function  checkTeacherResultHandler(event:ResultEvent):void{
+				
+				if(event.result as Boolean){
+					if(String(jcComb.selectedItem)=="undefined"||String(zcComb.selectedItem)=="undefined"){
+						Alert.show("查询条件不能为空!","提示");
+					}else{
+						attendanceSelec.findByQqjl(zcComb.selectedItem,jcComb.selectedItem,jghTex.text);
+					}
+				}else{
+					Alert.show("您输入的信息有误，请确认后再次输入!","警告");
+				}
+			}
+			//查询考勤信息结果返回
+			private function findByQqjlResultHandler(event:ResultEvent):void{
+				
+				if(event.result ==""||event.result == null){
+					Alert.show("没有相关信息，请确认您的查询条件。","提示");
+				}else{
+					attendance = event.result as ArrayCollection;
+				}
+				
+			}
+			//远程调用方法失败错误提示
+			protected function save_faultHandler(event:FaultEvent):void{				
+				Alert.show("预约失败，请确认您的身份信息!","警告");
+			}
+			protected function courseInfo_faultHandler(event:FaultEvent):void{
+				Alert.show("远程方法调用失败","错误");
+			}
+			protected function SearchShzt_faultHandler(event:FaultEvent):void{
+				Alert.show("远程查询预约失败，请核实您的身份信息！","警告");
+			}
+			protected function selectSenser_faultHandler(event:FaultEvent):void{
+				Alert.show("远程调用传感器信息失败","警告");
+			}
+			protected function checkTeacInfo_faultHandler(event:FaultEvent):void	{
+				Alert.show("验证教师信息失败，请核实您的身份信息！","警告");
+			}
+			//验证教师信息的输入
+			protected function kqInfo_clickHandler(event:MouseEvent):void{
+				var jghTemp:String,jgXmTemp:String;
+				if(jghTex.text!=jgPsd.text){
+					Alert.show("您输入的密码或者教工号不正确，请确认后再次输入！","警告");
+				}else{
+					jghTemp = jghTex.text;
+					jgXmTemp = xmTex.text;
+					checkTeacInfo.checkTeacher(jghTemp,jgXmTemp);
+				}
+			}
+			//教室查询不允许dropDownList为空			
+			protected function jxlmJscx_closeHandler(event:DropDownEvent):void	{
+				if(String(jxlmJscx.selectedItem)=="undefined"){
+					Alert.show("请选择教学楼","提示");
+				}
+			}
+			protected function lcJscx_closeHandler(event:DropDownEvent):void{
+				if(String(lcJscx.selectedItem)=="undefined"){
+					Alert.show("请选择楼层","提示");
+				}
+			}
+			protected function fjJscx_closeHandler(event:DropDownEvent):void{
+				if(String(fjJscx.selectedItem)=="undefined"){
+					Alert.show("请选择房间号","提示");
+				}
+			}
+			//教室查询最后验证
+			private function checkNullJscx():void{
+				if(String(jxlmJscx.selectedItem)=="undefined"){
+					Alert.show("请选择教学楼","提示");
+				}else{
+					if(String(lcJscx.selectedItem)=="undefined"){
+						Alert.show("请选择楼层","提示");
+					}else{
+						if(String(fjJscx.selectedItem)=="undefined"){
+							Alert.show("请选择房间号","提示");
+						}else{
+							courseInfo.selectClassCour();
+						}
+					}
+				}
+			}
+			//课表查询dropDownList为空的验证
+			protected function lm_closeHandler(event:DropDownEvent):void{
+				if(String(lm.selectedItem)=="undefined"){
+					Alert.show("请选择教学楼","提示");
+				}
+			}
+			protected function lc_closeHandler(event:DropDownEvent):void{
+				if(String(lc.selectedItem)=="undefined"){
+					Alert.show("请选择楼层","提示");
+				}
+			}
+			protected function fjh_closeHandler(event:DropDownEvent):void{
+				if(String(fjh.selectedItem)=="undefined"){
+					Alert.show("请选择房间号","提示");
+				}
+			}
+			//课程表查询的最后验证
+			private  function checkNullKbcx():void{
+				if(String(lm.selectedItem)=="undefined"){
+					Alert.show("请选择教学楼","提示");
+				}else{
+					if(String(lc.selectedItem)=="undefined"){
+						Alert.show("请选择楼层","提示");
+					}else{
+						if(String(fjh.selectedItem)=="undefined"){
+							Alert.show("请选择房间号","提示")
+						}else{
+							courseInfo.selectCour();
+						}
+					}
+				}
+			}
+			//设备查询deopDownList为空的验证
+			private  function checkNullSbcx():void{
+				if(String(dropdown1.selectedItem)=="undefined"){
+					Alert.show("请选择教学楼","提示");
+				}else{
+					if(String(dropdown2.selectedItem)=="undefined"){
+						Alert.show("请选择楼层","提示");
+					}else{
+						if(String(dropdown3.selectedItem)=="undefined"){
+							Alert.show("请选择房间号","提示");
+						}else{
+							bt1_clickHandler();
+						}
+					}
+				}
+			}
+			//教室预约字段为空验证
+			private function checkJsyy():void{
+				if(yname.text==""){
+					Alert.show("请输入您的姓名","提示");
+				}else{
+					if(stuID.text==""){
+						Alert.show("请输入您的学生证号","提示");					
+					}else{
+						if(String(buildCombo.selectedItem)=="undefined"){
+							Alert.show("请选择教学楼","提示");	
+						}else{
+							if(String(jsh.selectedItem)=="undefined"){
+								Alert.show("请选择楼层","提示");
+							}else{
+								if(String(fjhAppo.selectedItem)=="undefined"){
+									Alert.show("请选择房间号","提示");
+								}else{
+									if(String(js.selectedItem)=="undefined"){
+										Alert.show("请选择节次","提示");
+									}else{
+										if(yysj.selectedDate==null){
+											Alert.show("请选择您的使用时间","提示");
+										}else{
+											if(phone.text==""){
+												Alert.show("请输入您的有效联系方式","提示");
+											}else{
+												save.saveRecord();
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			//查询预约信息字段验证
+			private function checkSearchAppo():void{
+				if(xhAppo.text==""){
+					Alert.show("请输入您的有效证件号码","提示");
+				}else{
+					if(xmAppo.text==""){
+						Alert.show("请输入您的姓名","提示");
+					}else{
+						if(yysjAppo.selectedDate==null){
+							Alert.show("请选择您的预约使用时间","提示");
+						}else{
+							SearchShzt.findByXhYysj();
+						}
+					}
+				}	
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="A"/>
+		<s:State name="B"/>
+		<s:State name="C"/>
+		<s:State name="D"/>
+		<s:State name="E"/>
+	</s:states>
+	
+	<mx:Canvas fontSize="20" width="100%" height="100%" backgroundAlpha="0">
+		<mx:VBox  width="152" height="279" x="30.45" y="37.4">
+			<s:Label text="查看教室及课程信息" fontSize="14" />
+			<mx:Button label="教室信息" click="class_info.selectedChild=classroom" x="862.5" y="305" 
+					   width="150" height="40" chromeColor="#D5F6FF"  fontSize="15" fontWeight="bold" 
+					   color="#1880B1"  icon="@Embed(source='../WebRoot/images/classes/classInfo.png')"/>
+			<mx:Button label="课程查询" click="class_info.selectedChild=course_info" x="862.5" y="205" width="150" height="40"
+					   chromeColor="#D5F6FF" fontSize="15" fontWeight="bold" 
+					   color="#1880B1" icon="@Embed(source='../WebRoot/images/classes/courseInfo.png')"/>
+			<mx:Button label="设备信息" click="class_info.selectedChild=equipment" x="862.5" y="105" 
+					   width="150" height="40" chromeColor="#D5F6FF" fontSize="15" fontWeight="bold" 
+					   color="#1880B1" icon="@Embed(source='../WebRoot/images/classes/equipInfo.png')"/>
+			<mx:Button label="教室预约" click="class_info.selectedChild=reserve" width="150" height="40"
+					   chromeColor="#D5F6FF" fontSize="15"  fontWeight="bold" color="#1880B1"
+					   icon="@Embed(source='../WebRoot/images/classes/appoint.png')"/>
+			<mx:Button label="考勤信息" click="class_info.selectedChild = attendCheck" x="862.5" y="5"
+					   width="150" height="40" chromeColor="#D5F6FF" fontSize="15" fontWeight="bold" color="#1880B1"
+					   icon="@Embed(source='../WebRoot/images/classes/attend.png')"/>
+		</mx:VBox>
+		<mx:ViewStack id="class_info" width="837" backgroundAlpha="0.5" backgroundColor="#20a5e5"  right="0"  bottom="0"  top="0">
+			<!--教室查询-->
+			<mx:Canvas id="classroom" width="100%" height="100%">    
+				<s:DropDownList id="jxlmJscx" dataProvider="{lmc}" close="jxlmJscx_closeHandler(event)" prompt="请选择教学楼"
+								height="32" chromeColor="#D5F6FF"  fontSize="15"  width="140" x="23.85" textAlign="center" y="30.75"/>
+				<s:DropDownList  id="lcJscx" dataProvider="{lcS}"  prompt="请选择楼层" close="lcJscx_closeHandler(event)"
+								 height="33" chromeColor="#D5F6FF" fontSize="15"  textAlign="center" width="120"  x="172.3" y="30.55"/>
+				<s:DropDownList  id="fjJscx" dataProvider="{fjS}" prompt="请选择房间" close="fjJscx_closeHandler(event)"
+								 height="33" chromeColor="#D5F6FF"  fontSize="15"  textAlign="center" width="120"  x="300.3" y="30.55"/>
+				<mx:Button click="checkNullJscx()"   width="101" height="33"  chromeColor="#D5F6FF" fontSize="15" label="查看" x="449.55" y="30.55" icon="@Embed(source='../WebRoot/images/busLine/look.png')" />
+				<mx:Panel width="531" height="339.1" y="87" x="21" showEffect="{showEff}" id="cr_if"
+						  hideEffect="{hideEff}" borderColor="#D5EBF9" title="...楼...教室实时信息"
+						  backgroundAlpha="0.7" backgroundColor="#eeeeee">
+					<mx:Spacer height="10" width="10" />
+					<s:HGroup  width="504" height="200">
+						<mx:Spacer width="30" height="31"/>
+						<s:TextArea id="jsInfo" height="191" width="278" fontSize="15" borderVisible="false" />
+						<mx:Image width="179" height="141" source="com/wgc/images/classroom.jpg"/>
+					</s:HGroup>
+					<s:HGroup  width="508" height="38">
+						<s:Label text="教室人数：" fontSize="18" width="91" height="28"/>
+						<mx:ProgressBar height="31" id="bar" trackHeight="15"	minimum="0" maximum="100" label=" 0%"
+										direction="right" mode="manual" width="282" fontSize="12" color="#0000ff"/>
+						<s:Label id="lb1" width="41" fontSize="15" height="20" height.E="28" width.E="53"/>
+					</s:HGroup>
+				</mx:Panel>
+				<mx:VRule  chromeColor="#D5EBF9" x="571" y="25" height="466"/>
+				<s:Label text="本教室下节课上课信息提示" x="595" y="30" fontSize="15" />
+				<s:TextArea id="nextCourse" x="595.4" y="59.9" width="206" height="301"	showEffect="" fontSize="15" contentBackgroundColor="#E1EBE5"
+							 text="下节课提示" borderVisible="false"  contentBackgroundAlpha="0.5"/>
+			</mx:Canvas>
+			<!--教室设备-->
+			<mx:Canvas id="equipment" width="100%" height="100%">
+				<s:DropDownList  x="58" y="26" chromeColor="#D5F6FF" prompt="请选择教学楼..." fontSize="15" width="152" height="28" 
+								 id="dropdown1" dataProvider="{lmc}" textAlign="center"/>
+				<s:DropDownList  chromeColor="#D5F6FF" width="152" height="28" prompt="请选择楼层..." fontSize="15" 
+								 id="dropdown2" dataProvider="{lcS}" textAlign="center" x="253" y="26"/>
+				<s:DropDownList  chromeColor="#D5F6FF" width="152" height="28" prompt="请选择教室号..." fontSize="15"
+								 id="dropdown3" dataProvider="{fjS}" textAlign="center" x="444" y="26"/>				
+				<mx:Button x="667" y="26" label="查询" chromeColor="#D5F6FF" fontSize="15" height="30" icon="@Embed(source='../WebRoot/images/busLine/look.png')" 
+						   id="bt1" width="90" click="checkNullSbcx()"/>
+				<mx:TitleWindow   layout="absolute" width="778" height="437" id="title1"
+								  title="教室设备" showCloseButton="true" fontSize="13"
+								  x="10" y="73" height.B="420" height.A="420" height.C="420" height.D="420" height.E="420" width.E="800" width.A="680" width.B="680" width.C="680" width.D="680"
+								  showCloseButton.A="false" showCloseButton.B="false" showCloseButton.E="false" showCloseButton.D="false" 
+								  showCloseButton.C="false" x.A="60" y.A="73" x.B="60" x.C="60" x.D="60" borderVisible="false" 
+								  backgroundColor="#EEEEEE" backgroundAlpha="0.8">
+					<mx:VRule includeIn="E" x="493" y="10" height="366"/>
+					<mx:SWFLoader id="swfloader" includeIn="E" x="505" y="10" width="100" height="100" source="com/wgc/images/door.png"/>
+					<mx:Image source="com/wgc/images/tempSet.png" width="116" height="114" x="503" y="144" includeIn="E"/>
+					<mx:Image source="com/wgc/images/line.png" x="553" y="166" width="13" height="70" includeIn="E" creationCompleteEffect="{rotate7}"/>
+					
+					<s:TextArea id="txt2" text="当前情况一切正常！！" width="155" fontSize="20" color="#F31D1D" height="63" x="613" y="23" editable="false" contentBackgroundAlpha="0.0" includeIn="E" borderVisible="false"/>
+					
+					
+					<mx:HRule includeIn="E" x="519" y="118" width="249"/>
+					<s:TextArea id="txt1" includeIn="E" x="627" y="144" height="84" width="141" fontSize="17" borderAlpha="0.0" 
+								editable="false" text="当前教室温度："/>
+					<mx:Button includeIn="A,B,C,D"  label="返回" chromeColor="#D5F6FF" 
+							   width="0" height="0" click="currentState='E'" icon="@Embed(source='../WebRoot/images/busLine/return.png')"  x="453" y="356"/>
+					<mx:transitions>
+						<mx:Transition fromState="*" toState="*">
+							<mx:Parallel targets="{[windowA, windowB, windowC, windowD]}">
+								<mx:Move />
+								<mx:Resize />
+							</mx:Parallel>
+						</mx:Transition>
+					</mx:transitions>
+					<mx:TitleWindow x.E="33" y.E="18" width.E="200" height.E="166" layout="absolute" title="电扇" id="windowA" click="currentState='A'"  fontSize="13"
+									width.A="500" height.A="300" width.B="120" height.B="112" width.C="120" height.C="112" width.D="120" height.D="112"
+									y.B="249" y.C="129" y.D="11"  x.B="530" x.A="15" y.A="11" x.C="530" x.D="530">
+						<mx:Image x="0" y="0" width="100%" height="100%" source="com/wgc/images/fan.png"/>
+						<mx:Image includeIn="A" x="0" y="0" width="498" height="266" source="com/wgc/images/set.png"/>
+						<mx:Image includeIn="A" x="64" y="42" source="com/wgc/images/line.gif" width="43" height="94" creationCompleteEffect="{rotate1}"/>
+						<mx:Image includeIn="A" x="228" y="42" source="com/wgc/images/line.gif" width="43" height="94" creationCompleteEffect="{rotate2}"/>
+						<mx:Image includeIn="A" x="390" y="41" source="com/wgc/images/line.gif" width="43" height="94" creationCompleteEffect="{rotate3}"/>
+						<mx:Image includeIn="A" x="64" y="162" source="com/wgc/images/line.gif" width="43" height="94" creationCompleteEffect="{rotate4}"/>
+						<mx:Image includeIn="A" x="228" y="162" source="com/wgc/images/line.gif" width="43" height="94" creationCompleteEffect="{rotate5}"/>
+						<mx:Image includeIn="A" x="390" y="162" source="com/wgc/images/line.gif" width="43" height="94" creationCompleteEffect="{rotate6}"/>						
+						</mx:TitleWindow>
+					<!--投影仪-->			
+					<mx:TitleWindow x.E="258" y.E="18" width.E="200" height.E="166" layout="absolute" title="投影仪" id="windowB" click="currentState='B'"  fontSize="12"
+									width.A="120" height.A="112" width.B="500" height.B="300" width.C="120" height.C="112" width.D="120" height.D="112"
+									x.A="530" y.A="11" x.B="15" x.C="530" x.D="530"  y.C="249" y.D="129" y.B="11">
+						<mx:Image id="img4" x="0" y="0" width="100%" height="100%" source="com/wgc/images/projectorclose.png"/>
+						<!-- 投影仪图片切换 -->
+						<mx:Image id="img1" includeIn="B" x="0" y="0" width="100%" height="100%" source="com/wgc/images/projectorwork.png" visible="false"/>
+						<mx:Image id="img2" includeIn="B" x="0" y="0" width="100%" height="100%" source="com/wgc/images/projectorclose.png" visible="false"/>
+						<mx:Image id="img3" includeIn="B" x="0" y="0" width="100%" height="100%" source="com/wgc/images/projectorbroken.png" visible="false"/>
+					</mx:TitleWindow>
+					<!--电脑-->			
+					<mx:TitleWindow x.E="33" y.E="202" width.E="200" height.E="166" layout="absolute" title="电脑" id="windowC" click="currentState='C'"  fontSize="12"
+									width.A="120" height.A="112" width.B="120" height.B="112" width.C="500" height.C="300" width.D="120" height.D="112"
+									x.A="530" y.A="249" x.B="530" x.C="15" x.D="530" y.B="129" y.C="11" y.D="249">
+						<mx:Image id="img44" x="0" y="0" width="100%" height="100%" source="com/wgc/images/computerclose.png" />
+						<!-- 电脑图片切换 -->
+						<mx:Image id="img11" includeIn="C" x="0" y="0" width="100%" height="100%" source="com/wgc/images/computerwork.png" visible="false"/>
+						<mx:Image id="img22" includeIn="C" x="0" y="0" width="100%" height="100%" source="com/wgc/images/computerclose.png" visible="false"/>
+						<mx:Image id="img33" includeIn="C" x="0" y="0" width="100%" height="100%" source="com/wgc/images/computerbroken.png" visible="false"/>
+						</mx:TitleWindow>
+					<!--电灯-->			
+					<mx:TitleWindow x.E="258" y.E="202" width.E="200" height.E="166" layout="absolute" title="电灯" id="windowD" click="currentState='D'"  fontSize="12"
+									width.A="120" height.A="112" width.B="120" height.B="112" width.C="120" height.C="112" width.D="500" height.D="300"
+									x.A="530" y.A="129" x.B="530" x.C="530" x.D="15" y.B="11" y.C="11" y.D="11">
+						<mx:Image x="0" y="0" width="100%" height="100%" source="com/wgc/images/light.png"/>
+					</mx:TitleWindow>
+				</mx:TitleWindow>
+				
+			</mx:Canvas>
+			<!--教室预约-->				
+			<mx:Canvas id="reserve" width="100%" height="100%">
+				<mx:Form id="creditCardForm"  fontSize="15"  x="84" y="80" height="362" fontWeight="normal">
+					<mx:FormItem label="姓名: " required="true"   fontWeight="normal">
+						<mx:TextInput id="yname" width="100%" />
+					</mx:FormItem>
+					<mx:Spacer height="2"/>
+					<mx:FormItem label="学生证号：" required="true" fontFamily="Georgia" fontStyle="normal" fontWeight="normal">
+						<mx:TextInput id="stuID" restrict="0-9"/>
+					</mx:FormItem>
+					<mx:Spacer height="2"/>
+					<mx:FormItem  required="true" fontWeight="normal"  label="教学楼：">    
+						<s:DropDownList id="buildCombo" dataProvider="{lmc}" prompt="请选择楼名" height="25" width="190" 
+										textAlign="center" contentBackgroundColor="#D5F6FF" chromeColor="#D5F6FF"/>
+					</mx:FormItem>
+					<mx:Spacer height="2"/>
+					<mx:FormItem  required="true" fontWeight="normal" label="教室：">
+						<s:HGroup>							
+							<s:DropDownList id="jsh" dataProvider="{lcS}" prompt="楼层号" width="85" height="25" chromeColor="#D5F6FF"/>
+							<mx:Spacer width="10"/>
+							<s:DropDownList id="fjhAppo" dataProvider="{fjS}" prompt="房间号"  width="85" height="25" chromeColor="#D5F6FF"/>
+						</s:HGroup>
+					</mx:FormItem>
+					<mx:Spacer height="2"/>
+					<mx:FormItem  required="true" fontWeight="normal" label="节次：">
+						<s:ComboBox id="js" dataProvider="{jch}"  chromeColor="#D5F6FF"/>
+					</mx:FormItem>
+					<mx:Spacer height="2"/>
+					<mx:FormItem  required="true" fontWeight="normal" label="使用时间: ">
+						<mx:DateField id="yysj" width="150" formatString="YYYY-MM-DD" />
+					</mx:FormItem>
+					<mx:Spacer height="2"/>
+					<mx:FormItem label="电话: " fontWeight="normal">
+						<mx:TextInput id="phone" width="100%" maxChars="12" restrict="0-9"/>
+					</mx:FormItem>
+					<mx:Spacer height="2"/>
+					<mx:FormItem>
+						<mx:Button id="submit" enabled="true" label="提交" click="checkJsyy()" chromeColor="#D5F6FF" 
+								   icon="@Embed(source='../WebRoot/images/classes/submit.png')"
+								   width="100" height="30"/>
+					</mx:FormItem>
+				</mx:Form> 
+				<mx:VRule   height="460"  x="503" y="37"/>
+				
+				<s:Label     text="证件号码：" fontSize="15"  x="552" y="307"/>
+				<mx:TextInput id="xhAppo" errorString="请输入有效证件号" height="30" restrict="0-9" fontSize="15"   x="641.65" y="296.65"/>
+				<s:Label     text="姓名：" fontSize="15"  x="553" y="272"/>
+				<s:TextInput id="xmAppo"  errorString="请输入您的姓名"   width="160" fontSize="15"  height="31"  x="641" y="262"/>
+				<s:Label   text="使用时间：" fontSize="15"  x="552" y="344"/>
+				<mx:DateField id="yysjAppo" formatString="YYYY-MM-DD"  width="160"  fontSize="15"   x="642" y="335"/>
+				<mx:Button id="selectAppoSh" click="checkSearchAppo()"  chromeColor="#D5F6FF" width="100" height="32" fontSize="15"  label="查询"  
+						   icon="@Embed(source='../WebRoot/images/classes/search.png')" x="677.65" y="381.55"/>
+				<mx:Image   source="com/wgc/images/people.png" x="592" y="114"/>
+				<s:Label fontSize="14" x="88" y="36" text="若需要占用教室，请填入详细信息，然后提交"/>
+				<s:Label text="查询预约结果是否成功" fontSize="15" x="586" y="62" height="28"/>
+			</mx:Canvas>
+			<!--课程表-->				
+			<mx:Canvas width="100%" height="100%" id="course_info" cornerRadius="4">
+				<s:DropDownList id="lm" chromeColor="#D5F6FF"  height="30"   prompt="请选择楼" fontSize="15" 
+								dataProvider="{lmc}" close="lm_closeHandler(event)"  x="69.8" y="43.5"  
+								textAlign="center" width="120"/>
+				<s:DropDownList id="lc" chromeColor="#D5F6FF" height="30"  prompt="请选择层数" fontSize="15" 
+								dataProvider="{lcS}"  close="lc_closeHandler(event)"    textAlign="center" width="120" x="239.8" y="45.5"/>
+				<s:DropDownList id="fjh" chromeColor="#D5F6FF" height="30" 	prompt="请选择房间" fontSize="15" 
+								dataProvider="{fjS}" close="fjh_closeHandler(event)" textAlign="center" width="120" x="404.8" y="44.5"/>
+				<s:DropDownList id="zc" chromeColor="#D5F6FF" height="30"   prompt="请选择周次" fontSize="15" 
+								dataProvider="{zcArr}"   x="69.8" y="81.5"  textAlign="center" width="120"/>
+				<s:DropDownList id="jc" chromeColor="#D5F6FF" height="30"  prompt="请选择节次" fontSize="15" 
+								dataProvider="{jch}" textAlign="center" width="120" x="239.8" y="81.5"/>
+				
+				<mx:Button label="查询"  width="82"   icon="@Embed(source='../WebRoot/images/busLine/look.png')" chromeColor="#D5F6FF" fontSize="15"
+						   id="query" click="checkNullKbcx()" height="30" x="574.15" y="81.15"/>
+				<mx:DataGrid  width="500" dataProvider="{resultData}" fontSize="15"  height="230" x="86.35" y="137.95">
+					<mx:columns>
+						<mx:DataGridColumn headerText="上课班级"  dataField="bjm" width="100" />
+						<mx:DataGridColumn headerText="上课教师" dataField="teacher.xm" />
+						<mx:DataGridColumn headerText="课程名"  dataField="course.kcm" width="120"/>
+						<mx:DataGridColumn headerText="上课地点"  labelFunction="jshTrans"  width="140" />
+						<mx:DataGridColumn headerText="上课节次"  dataField="js"  />
+					</mx:columns>
+				</mx:DataGrid>				
+				<mx:Image x="651" y="288" height="100" width="129" source="com/wgc/images/course.png"/>
+				
+			</mx:Canvas>
+			<!--考勤信息查询 -->
+			<mx:Canvas width="100%" height="100%" id="attendCheck">
+				<mx:FormItem required="true" fontSize="15" x="48" y="47" width="202" label="教工号：">
+					<s:TextInput id="jghTex" restrict="0-9"  width="123" text=""/>
+				</mx:FormItem>
+				<mx:FormItem required="true" fontSize="15" x="258" y="46" label="姓名：" width="170">
+					<s:TextInput  id="xmTex" width="107" text=""/>					
+				</mx:FormItem>
+				<mx:FormItem required="true" fontSize="15" x="460" y="46" label="密码：" width="198">
+					<s:TextInput id="jgPsd" displayAsPassword="true" restrict="0-9" width="133" text=""/>
+				</mx:FormItem>
+				
+				<mx:Button id="kqInfo" label="确定" click="kqInfo_clickHandler(event)"   
+						   fontSize="15" height="30" chromeColor="#D5F6FF" width="100"
+						   icon="@Embed(source='../WebRoot/images/classes/submit.png')" x="478" y="100"/>
+				<mx:Image source="com/wgc/images/class.png" x="655" y="287"/>
+				<mx:Image  x="57" y="131" source="com/wgc/images/absence.png" height="47" width="143"/>
+				<s:Label  fontSize="15" text="周次：" x="48" y="109"/>
+				<s:DropDownList  id="zcComb" dataProvider="{zcArr}" close="zcComb_closeHandler(event)"  prompt="请选择周次" 
+								 width="120"  fontSize="15"  textAlign="center" height="26" x="92" y="102" chromeColor="#D5F6FF"/>
+				<s:Label  fontSize="15" text="节次：" x="242" y="108" height="19"/>
+				<s:DropDownList id="jcComb" dataProvider="{jch}" close="jcComb_closeHandler(event)"  prompt="请选择节次"  
+								width="120"  fontSize="15"  textAlign="center" height="26" x="294" y="101" chromeColor="#D5F6FF"/>
+				<mx:DataGrid id="qqStu" dataProvider="{attendance}" height="224" fontSize="15" x="61" y="177" width="524">
+					<mx:columns>
+						<mx:DataGridColumn headerText="姓名" dataField="student.xm"  width="150"/>
+						<mx:DataGridColumn headerText="班级" dataField="student.bjm" width="120"/>
+						<mx:DataGridColumn headerText="课程名" dataField="course.kcm" width="120" />
+						<mx:DataGridColumn headerText="上课日期" labelFunction="operaSkrq" width="170"/>
+					</mx:columns>
+				</mx:DataGrid>
+				<s:TextArea x="601" y="104" width="193" height="175" contentBackgroundColor="#D5F6FF" text="您需要先输入正确的教师信息然后才能查询到您的相关课程缺勤信息。"/>
+			</mx:Canvas>
+		</mx:ViewStack>
+	</mx:Canvas>
+</s:BorderContainer>

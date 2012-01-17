@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<list label="帮助">
+	<chapter label="教室管理系统">
+		<item label="教室即时信息查询" url="c1"/>
+		<item label="课程信息查询" url="c2"/>
+		<item label="设备信息查询" url="c3"/>
+		<item label="学生预约教室" url="c4"/>
+		<item label="预约信息查询" url="c5"/> 
+		<item label="教室查看考勤信息" url="c6"/>
+		<item label="设备损坏信息" url="c7"/>
+		<item label="预约教室审核" url="c8"/>
+	</chapter>
+	<chapter label="停车场管理系统">
+		<item label="校内全部停车场信息" url="s1"/>
+		<item label="各停车场信息" url="s2"/>
+		<item label="停车场位置查看" url="s3"/>
+	</chapter>
+	<chapter label="校园公交管理系统">
+		<item label="站台人数查看" url="b1"/>
+		<item label="公交路线图" url="b2"/>
+		<item label="校园公交车信息" url="b3"/>
+		<item label="校园公交管理平台" url="b4"/>
+	</chapter>
+	<chapter label="后台数据模拟系统">
+		<item label="后台模拟" url="m1"/>
+	</chapter>
+</list>

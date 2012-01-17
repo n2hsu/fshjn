@@ -1,0 +1,353 @@
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="955" minHeight="600"
+			   skinClass="com.wgc.aid.skinPage" xmlns:myComponents="com.wgc.view.*" xmlns:aidComp="com.wgc.aid.*"
+			   initialize="timerCarRun(),timerImage()" creationComplete="VarConNull(),initXmlTimer()">
+	<fx:Script>
+		<![CDATA[
+			import com.wgc.aid.popUp;
+			import com.wgc.asFolder.CarMove;
+			import com.wgc.asFolder.GobalVaris;
+		
+			import mx.collections.*;
+			import mx.controls.Alert;
+			import mx.controls.Image;
+			import mx.effects.Sequence;
+			import mx.events.MenuEvent;
+			import mx.events.ToolTipEvent;
+			
+			import org.osmf.events.TimeEvent;
+			[Bindable] private var peopleN:ArrayCollection = new ArrayCollection(['2','5','6']);
+			//线路一
+			private var line1:Array = new Array(
+				new Point(50,237),		new Point(50,237),		new Point(111,254),
+				new Point(208,251),		new Point(205,186),		new Point(198,116),
+				new Point(266,111),		new Point(345,112),		new Point(438,113),
+				new Point(525,116),		new Point(633,135),		new Point(721,152),
+				new Point(801,159),		new Point(926,163),		new Point(942,241),
+				new Point(954,324),		new Point(985,408)
+				
+			);
+			//线路二
+			private var line2:Array = new Array(
+				
+				new Point(65,237),		new Point(133,254),		new Point(217,251),
+				new Point(260,300),		new Point(293,334),		new Point(363,290),
+				new Point(452,284),		new Point(548,294),		new Point(564,373),
+				new Point(632,371),		new Point(718,371),		new Point(802,376),
+				new Point(888,378),		new Point(956,382),		new Point(995,433)
+			);
+			//线路三
+			private var line3:Array = new Array(
+				new Point(98,99),		new Point(153,107),		new Point(247,109),
+				new Point(336,113),		new Point(350,178),		new Point(360,246),
+				new Point(401,287),		new Point(403,350),		new Point(394,426),
+				new Point(370,456),		new Point(324,400),		new Point(230,396),
+				new Point(203,350),		new Point(147,299),		new Point(114,258),
+				new Point(81,237)
+			);
+			
+			//小车从左向右行驶
+			private function  carRunLR(lineArr:Array,bus:Image):void{
+				var po1:Point = new Point;
+				var po2:Point = new Point;
+				var sq:Sequence = new Sequence;
+				
+				for(var i:int = 0;i<lineArr.length-1;i++ ){
+					po1 = lineArr[i];
+					po2 = lineArr[i+1];
+					var carMove:CarMove = new CarMove(po1,po2,bus);
+					sq.addChild(carMove);
+				}
+				sq.play();
+			}
+			//小车从右向左行驶
+			private function  carRunRL(lineArr:Array,bus:Image):void{
+				var po1:Point = new Point;
+				var po2:Point = new Point;
+				var sq:Sequence = new Sequence;
+				
+				for(var i:int = lineArr.length-1;i>0;i--){
+					po1 = lineArr[i];
+					po2 = lineArr[i-1];
+					var carMove:CarMove = new CarMove(po1,po2,bus);
+					sq.addChild(carMove);
+				}
+				sq.play();
+			}
+			
+			//点击大楼出现的弹出窗口
+			private function createCustomTip(title:String, event:ToolTipEvent):void {
+				var pop:popUp = new popUp();
+				pop.title = title;
+				event.toolTip = pop;
+				GobalVaris.popUpTitle = title;
+			}	
+			//点击进入全局页面
+			private function clickBuildingRedirect(title:String):void{
+				homePage.selectedChild=build_info;
+				GobalVaris.titleStr = title;
+			}	
+			private function VarConNull():void{
+				carRunLR(line1,bus5);
+				carRunLR(line2,bus1);
+				carRunLR(line3,bus3);
+				carRunRL(line1,bus2);
+				carRunRL(line2,bus4);
+				carRunRL(line3,bus6);	
+			}
+			//整合所有路线上车辆参数的注入
+			private function VarCon(event:TimerEvent):void{
+				carRunLR(line1,bus5);
+				carRunLR(line2,bus1);
+				carRunLR(line3,bus3);
+				carRunRL(line1,bus2);
+				carRunRL(line2,bus4);
+				carRunRL(line3,bus6);	
+			}
+			//图片透明变化
+			private function ImageAlp(event:TimerEvent):void{
+				
+				enter.alpha = enter.alpha-0.2;
+				//处理无法点击的问题，原因是点击的还是原有图片的隐藏部分
+				if(enter.alpha<=0){
+					enter.width = 1;
+					enter.height = 1;
+					enter.x = 0;
+					enter.y = 0;
+					timer2.stop();
+				}
+			}
+			private var timer:Timer = new Timer(75000);
+			private var timer2:Timer = new Timer(1000);			
+			private var timer3:Timer = new Timer(4000);
+			private var people:XML;
+			
+			
+			//添加定时器
+			private function timerCarRun():void{
+				timer.addEventListener(TimerEvent.TIMER,VarCon);
+				timer.start();	
+			}
+			//添加定时器--图片渐变效果显示
+			private function timerImage():void{
+				
+				timer2.addEventListener(TimerEvent.TIMER,ImageAlp);
+				timer2.start();
+			}
+			//定时器初始化----xml定时读取
+			private function initXmlTimer():void{	
+				
+				timer3.addEventListener(TimerEvent.TIMER, initXml);
+				timer3.start(); 
+				
+			}
+			//读取Xml中的值
+			private function initXml(event:TimerEvent):void{
+				var request:URLRequest = new URLRequest("../xml/Station.xml?time="+new Date().getTime());
+				var loader:URLLoader = new URLLoader(request);
+				loader.addEventListener(Event.COMPLETE, loaderCompleteHandler);
+				
+			}
+			//向List中注入
+			public function loaderCompleteHandler(event:Event):void{
+				
+				var stArr1:ArrayCollection = new ArrayCollection();
+				var stArr2:ArrayCollection = new ArrayCollection();
+				var stArr3:ArrayCollection = new ArrayCollection();
+				var stArr4:ArrayCollection = new ArrayCollection();
+				var stArr5:ArrayCollection = new ArrayCollection();
+				var stArr6:ArrayCollection = new ArrayCollection();
+				var stArr7:ArrayCollection = new ArrayCollection();
+				var stArr8:ArrayCollection = new ArrayCollection();
+				people = new XML(event.target.data);	
+				
+				for(var i:int = 0 ;i<people.children().length();i++ ){
+					var str:String = people.child(i).child(1);
+					var tempInt:int  = int((people.child(i).child(0)+"").substr(1,2)); 
+					
+					switch(tempInt){
+						case 1:stArr1.addItem(str);break;
+						case 2:stArr2.addItem(str);break;
+						case 3:stArr3.addItem(str);break;
+						case 4:stArr4.addItem(str);break;
+						case 5:stArr5.addItem(str);break;
+						case 6:stArr6.addItem(str);break;						
+						case 7:stArr7.addItem(str);break;
+						case 8:stArr8.addItem(str);break;
+						default : ;
+					}
+				}
+				var temp:String = stArr7.getItemAt(1).toString(); stArr7.removeItemAt(1); stArr7.addItem("无"); stArr7.addItem(temp);
+				var temp1:String = stArr8.getItemAt(1).toString(); stArr8.removeItemAt(1); stArr8.addItem("无"); stArr8.addItem(temp1);
+				st1.dataProvider = stArr1;st2.dataProvider = stArr2;st3.dataProvider = stArr3;
+				st4.dataProvider = stArr4;st5.dataProvider = stArr5;st6.dataProvider = stArr6;
+				st7.dataProvider = stArr7;st8.dataProvider = stArr8;			
+			}
+			//鼠标移动到相应站台时可以显示站台人数		
+			public function mouseOn(lb:spark.components.Label):void{
+				var str:String = null;
+				lb.height = lb.height + 18;
+				
+				if(String("")=="undefined"){
+					//获取xml中的人数显示
+					lb.text =  lb.text+"\n"+"人";
+				}else{									
+					//获取List的值
+					if(lb.id.substr(2,1)=='2'){
+						switch(lb.id.substr(3,1)){
+							case '1':str = st1.dataProvider.getItemAt(1)+"";break;
+							case '2':str = st2.dataProvider.getItemAt(1)+"";break;
+							case '3':str = st3.dataProvider.getItemAt(1)+"";break;
+							case '4':str = st4.dataProvider.getItemAt(1)+"";break;
+							case '5':str = st5.dataProvider.getItemAt(1)+"";break;
+							case '6':str = st6.dataProvider.getItemAt(1)+"";break;
+							default:str = null;
+						}
+					}else{
+						switch(lb.id.substr(3,1)){
+							case '1':str = st1.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '2':str = st2.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '3':str = st3.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '4':str = st4.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '5':str = st5.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '6':str = st6.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '7':str = st7.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							case '8':str = st8.dataProvider.getItemAt(int(lb.id.substr(2,1))-1)+"";break;
+							default:str = null;
+						}
+					}
+					lb.text =  lb.text+"\n"+str+"人";
+				}
+			}
+			//鼠标相应站台从移除时回归原来的状态
+			public function mouseOut(e:MouseEvent,str:String):void{			
+				e.target.text = str;
+				e.target.height = 18;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:TabNavigator width="1053" height="576" tabHeight="50" tabWidth="100" borderColor="#d5ebf9" backgroundColor="#EFF8FF"
+					 dropShadowVisible="true"  horizontalAlign="right" chromeColor="#1AA4EB" paddingTop="0"
+					 borderVisible="true" horizontalCenter="0" verticalCenter="0" backgroundAlpha="0.5">
+		<mx:Canvas width="100%" height="100%" icon="@Embed('../WebRoot/images/home/home.png')">
+			<mx:ViewStack width="100%" height="100%" id="homePage">
+				
+				<mx:Canvas width="100%" height="100%"  id="allBuilding">
+					<mx:Image   source="com/wgc/images/school_map.png" width="1034" height="492" horizontalCenter="0" verticalCenter="0"/>
+					<s:Label x="308" y="2" text="站台1"/>
+					<s:Label x="388" y="2" text="站台2"/>
+					<s:Label x="468" y="2" text="站台3"/>
+					<s:Label x="548" y="2" text="站台4"/>
+					<s:Label x="628" y="2" text="站台5"/>
+					<s:Label x="708" y="2" text="站台6"/>
+					<s:Label x="788" y="2" text="站台7"/>
+					<s:Label x="868" y="2" text="站台8"/>
+					<s:List id="st1" x="308" y="22" width="80" height="68" dataProvider="{peopleN}" />
+					<s:List id="st2" x="388" y="22" width="80" height="68" dataProvider="{peopleN}"/>
+					<s:List id="st3" x="468" y="22" width="80" height="68" dataProvider="{peopleN}"/>
+					<s:List id="st4" x="548" y="22" width="80" height="68" dataProvider="{peopleN}"/>
+					<s:List id="st5" x="628" y="22" width="80" height="68" dataProvider="{peopleN}"/>
+					<s:List id="st6" x="708" y="22" width="80" height="68" dataProvider="{peopleN}"/>
+					<s:List id="st7" x="788" y="22" width="80" height="68" dataProvider="{peopleN}"/>
+					<s:List id="st8" x="868" y="22" width="80" height="68" dataProvider="{peopleN}"/>
+					<s:Label id="lb11" x="68" y="251" text="站台1" width="35" height="18" mouseOver="mouseOn(lb11)" mouseOut="mouseOut(event,'站台1')" 
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					<s:Label id="lb12" x="229" y="134" text="站台2" width="35" height="18" mouseOver="mouseOn(lb12)" mouseOut="mouseOut(event,'站台2')"
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					<s:Label id="lb13" x="356" y="103" text="站台3" width="35" height="18" mouseOver="mouseOn(lb13)" mouseOut="mouseOut(event,'站台3')"
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					<s:Label id="lb14" x="563" y="116" text="站台4" width="35" height="18" mouseOver="mouseOn(lb14)" mouseOut="mouseOut(event,'站台4')"
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					<s:Label id="lb15" x="752" y="148" text="站台5" width="35" height="18" mouseOver="mouseOn(lb15)" mouseOut="mouseOut(event,'站台5')"
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					<s:Label id="lb16" x="913" y="156" text="站台6" width="35" height="18" mouseOver="mouseOn(lb16)" mouseOut="mouseOut(event,'站台6')"
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>			
+					<s:Label id="lb17" x="927" y="327" text="站台7" width="35" height="18" mouseOver="mouseOn(lb17)" mouseOut="mouseOut(event,'站台7')"
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					<s:Label id="lb18" x="985" y="450" text="站台8" width="35" height="18" mouseOver="mouseOn(lb18)" mouseOut="mouseOut(event,'站台8')"
+							 fontWeight="bold" backgroundColor="#FF0606" color="#FDF8F8"/>
+					
+					<s:Label id="lb21" x="130" y="251" text="站台1" width="35" height="18" mouseOver="mouseOn(lb21)" mouseOut="mouseOut(event,'站台1')"
+							 fontWeight="bold" backgroundColor="#05C7F8" color="#FBFAFA"/>
+					<s:Label id="lb22" x="331" y="228" text="站台2" width="35" height="18" mouseOver="mouseOn(lb22)" mouseOut="mouseOut(event,'站台2')"
+							 fontWeight="bold" backgroundColor="#05C7F8" color="#FBFAFA"/>
+					<s:Label id="lb23" x="401" y="273" text="站台3" width="35" height="18" mouseOver="mouseOn(lb23)" mouseOut="mouseOut(event,'站台3')"
+							 fontWeight="bold" backgroundColor="#05C7F8" color="#FBFAFA"/>
+					<s:Label id="lb24" x="571" y="292" text="站台4" width="35" height="18" mouseOver="mouseOn(lb24)" mouseOut="mouseOut(event,'站台4')"
+							 fontWeight="bold" backgroundColor="#05C7F8" color="#FBFAFA"/>
+					<s:Label id="lb25" x="772" y="310" text="站台5" width="35" height="18" mouseOver="mouseOn(lb25)" mouseOut="mouseOut(event,'站台5')"
+							 fontWeight="bold" backgroundColor="#05C7F8" color="#FBFAFA"/>
+					<s:Label id="lb26" x="964" y="422" text="站台6" width="35" height="18" mouseOver="mouseOn(lb26)" mouseOut="mouseOut(event,'站台6')"
+							 fontWeight="bold" backgroundColor="#05C7F8" color="#FBFAFA"/>				
+					
+					<s:Label id="lb31" x="56" y="93" text="站台1" width="35" height="18" mouseOver="mouseOn(lb31)" mouseOut="mouseOut(event,'站台1')"
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<s:Label id="lb32" x="229" y="97" text="站台2" width="35" height="18" mouseOver="mouseOn(lb32)" mouseOut="mouseOut(event,'站台2')"
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<s:Label id="lb33" x="370" y="134" text="站台3" width="35" height="18" mouseOver="mouseOn(lb33)" mouseOut="mouseOut(event,'站台3')"
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<s:Label id="lb34" x="371" y="282" text="站台4" width="35" height="18" mouseOver="mouseOn(lb34)" mouseOut="mouseOut(event,'站台4')"
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<s:Label id="lb35" x="300" y="343" text="站台5" width="35" height="18" mouseOver="mouseOn(lb35)" mouseOut="mouseOut(event,'站台5')"
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<s:Label id="lb36" x="317" y="406" text="站台6" width="35" height="18" mouseOver="mouseOn(lb36)" mouseOut="mouseOut(event,'站台6')"
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<s:Label id="lb37" x="158" y="323" text="站台7" width="35" height="18" mouseOver="mouseOn(lb37)" mouseOut="mouseOut(event,'站台7')"
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>							
+					<s:Label id="lb38" x="88" y="266" text="站台8" width="35" height="18" mouseOver="mouseOn(lb38)" mouseOut="mouseOut(event,'站台8')"
+							 fontWeight="bold" backgroundColor="#0634FD" color="#FCFAFA"/>
+					<mx:LinkButton width="95" height="78" x="65" y="95" label="材料楼" color="#1E31E2" rollOverColor="#A5F6FF"
+								   focusColor="#F7FAFD"  fontWeight="bold" fontSize="18" selectionColor="#1AA4EB" cornerRadius="7"
+								   click="clickBuildingRedirect('材料楼')"  toolTip="材料楼" toolTipCreate="createCustomTip('材料楼',event)"  />
+					<mx:LinkButton width="107" height="71" x="65" y="343" label="文学楼" color="#1E31E2" rollOverColor="#A5F6FF" 
+								   focusColor="#F7FAFD"   fontWeight="bold" fontSize="18" selectionColor="#1AA4EB" cornerRadius="7" 
+								   click="clickBuildingRedirect('文学楼')" toolTip="文学楼" toolTipCreate="createCustomTip('文学楼',event)"/>
+					<mx:LinkButton width="85" height="108" x="951" y="110" label="经济楼" color="#1E31E2" rollOverColor="#A5F6FF" 
+								   focusColor="#F7FAFD" fontWeight="bold" fontSize="18" selectionColor="#1AA4EB" cornerRadius="7"
+								   toolTip="经济楼" click="clickBuildingRedirect('经济楼')"  toolTipCreate="createCustomTip('经济楼', event)" />
+					<mx:LinkButton width="81" height="97" x="961" y="275" label="外语楼" color="#1E31E2" 
+								   rollOverColor="#A5F6FF" focusColor="#F7FAFD" fontWeight="bold" fontSize="18" selectionColor="#1AA4EB" cornerRadius="7"
+								   click="clickBuildingRedirect('外语楼')" toolTipCreate="createCustomTip('外语楼', event)"  toolTip="外语楼" />			
+					<mx:LinkButton x="439" y="312" width="91" height="106" cornerRadius="7"  label="信息楼" color="#1E31E2" 
+								   rollOverColor="#A5F6FF" focusColor="#F7FAFD" fontWeight="bold" fontSize="18" selectionColor="#1AA4EB" 
+								   toolTipCreate="createCustomTip('信息楼', event)"  toolTip="信息楼"  click="clickBuildingRedirect('信息楼')"  />
+					<mx:Image id="bus1" source="com/wgc/images/bus1.png" x="90" y="90" width="32" height="23" />
+					<mx:Image id="bus6" source="com/wgc/images/bus1.png" x="125" y="92" width="32" height="23"/>
+					<mx:Image id="bus3" source="com/wgc/images/bus1.png" x="81" y="235" width="32" height="23"/>
+					<mx:Image id="bus5" source="com/wgc/images/bus1.png" x="48" y="225" width="32" height="23"/>
+					<mx:Image id="bus2" source="com/wgc/images/bus2.png" x="995" y="404" width="32" height="23"/>
+					<mx:Image id="bus4" source="com/wgc/images/bus2.png" x="995" y="425" width="32" height="23"/>
+					<s:Label x="255" y="30" text="线路一" color="#FEF8F8"/>
+					<s:Label x="255" y="50" text="线路二" color="#3F0707" backgroundColor="#FBE4E4"/>
+					<s:Label x="255" y="77" text="线路三" color="#FFFBFB" backgroundColor="#43BBA9"/>
+					<s:Label x="6" y="16" text="点击楼图查看本楼的全局信息&#xd;点击站台查看等车人数" width="210" height="46" fontSize="16" backgroundColor="#7F9E60"/>
+				</mx:Canvas>
+				<mx:Canvas width="100%" height="100%"  id="build_info">
+					<aidComp:clickMap horizontalCenter="0" verticalCenter="0" backgroundAlpha="0"/>				
+					<s:Button x="940" y="40" label="返回首页" click="homePage.selectedChild=allBuilding" fontSize="15"/>
+				</mx:Canvas>
+			</mx:ViewStack>
+		</mx:Canvas>
+		<mx:Canvas width="100%" height="100%" toolTip="教室信息" icon="@Embed('../WebRoot/images/home/classes.png')">
+			<myComponents:classes  horizontalCenter="0" verticalCenter="0" backgroundColor="#EFF8FF" backgroundAlpha="0"/>
+		</mx:Canvas>
+		<mx:Canvas width="100%" height="100%" icon="@Embed('../WebRoot/images/home/carStation.png')" toolTip="停车场">
+			<myComponents:carStation  verticalCenter="0" horizontalCenter="0" backgroundColor="#EFF8FF" backgroundAlpha="0"/>
+		</mx:Canvas>
+		<mx:Canvas width="100%" height="100%"  icon="@Embed('../WebRoot/images/home/busLine.png')" toolTip="校园公交">
+			<myComponents:busLine  horizontalCenter="0" verticalCenter="0" backgroundColor="#EFF8FF" backgroundAlpha="0"/>
+		</mx:Canvas>
+		<mx:Canvas width="100%" height="100%"  icon="@Embed('../WebRoot/images/home/manager.png')" toolTip="管理员进入">
+			<myComponents:manager/>
+		</mx:Canvas>
+		<mx:Canvas width="100%" height="100%"  icon="@Embed('../WebRoot/images/home/help.png')" toolTip="帮助">
+			<myComponents:help />
+		</mx:Canvas>
+	</mx:TabNavigator>
+	<mx:Image x="74" y="12" source="com/wgc/images/logo.png" horizontalCenter="-489" verticalCenter="-270" height="70" width="70"/>
+	<mx:Image id="enter" source="com/wgc/images/enter.png" x="0" y="0" width="1440" height="1024" alpha="1"/>
+	
+</s:Application>

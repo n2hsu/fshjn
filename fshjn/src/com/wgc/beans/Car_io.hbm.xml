@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.wgc.beans.Car_io" table="car_io" >
+        <id name="cljcID" type="java.lang.Long">
+            <column name="cljcID" />
+            <generator class="identity" />
+        </id>
+        <property name="cph" type="java.lang.String">
+            <column name="cph" length="10" not-null="true" />
+        </property>
+        <property name="jczt" type="java.lang.String">
+            <column name="jczt" length="2" not-null="true" />
+        </property>
+        <property name="cxm" type="java.lang.String">
+            <column name="cxm" length="8" not-null="true" />
+        </property>
+        <property name="jlsj" type="java.sql.Timestamp">
+            <column name="jlsj" length="23" not-null="true" />
+        </property>
+    </class>
+</hibernate-mapping>

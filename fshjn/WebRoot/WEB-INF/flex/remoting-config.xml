@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<service id="remoting-service" 
+    class="flex.messaging.services.RemotingService">
+
+    <adapters>
+        <adapter-definition id="java-object" class="flex.messaging.services.remoting.adapters.JavaAdapter" default="true"/>
+    </adapters>
+
+    <default-channels>
+        <channel ref="my-amf"/>
+    </default-channels>
+    <!-- AppointAction, SelectCourse
+    <destination id="build">
+    	<properties>
+    		<factory>SpringID</factory>-->
+    		<!-- Action Bean的名字 
+    		<source>buidingService</source>
+    	</properties>
+    </destination>-->
+
+    <!-- id对应于前台的destination.
+    	AppointAction-->
+    <destination id="saveAppo">
+    	<properties>
+    		<factory>SpringID</factory>
+    		<source>saveAppoint</source>
+    	</properties>
+    </destination>
+	<destination id="selectCourseInfo">
+		<properties>
+			<factory>SpringID</factory>
+			<source>selectCourse</source>
+		</properties>
+	</destination>
+	<!-- look_course -->
+	<destination id="selectTeac">
+		<properties>
+			<factory>SpringID</factory>
+			<source>selectTeacher</source>
+		</properties>
+	</destination>
+	<destination id="selectAppo">
+		<properties>
+			<factory>SpringID</factory>
+			<source>selectAppoint</source>
+		</properties>
+	</destination>
+	<destination id="selectStu">
+		<properties>
+			<factory>SpringID</factory>
+			<source>selectStudent</source>
+		</properties>
+	</destination>
+	<destination id="updateAppo">
+		<properties>
+			<factory>SpringID</factory>
+			<source>updateAppoint</source>
+		</properties>
+	</destination>
+	<destination id="carParkNum">
+		<properties>
+			<factory>SpringID</factory>
+			<source>selectCarPark</source>
+		</properties>
+	</destination>
+	<destination id="SenserSele">
+		<properties>
+			<factory>SpringID</factory>
+			<source>selectSenser</source>
+		</properties>
+	</destination>	
+	<destination id="selectCarPark">
+		<properties>
+			<factory>SpringID</factory>
+			<source>selectCarPark</source>
+		</properties>
+	</destination>
+	<destination id="selectEquError">
+		<properties>
+			<factory>SpringID</factory>
+			<source>selectEquError</source>
+		</properties>
+	</destination>
+	<destination id="selectAttendance">
+		<properties>
+			<factory>SpringID</factory>
+			<source>selectAttend</source>
+		</properties>
+	</destination>    
+</service>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:mx="library://ns.adobe.com/flex/mx" width="1051" height="525" creationComplete="initData()">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ICollectionView;
+			import mx.controls.Alert;
+			import mx.events.ListEvent;
+
+			private function initData():void{
+				var urlRequest:URLRequest = new URLRequest("../xml/Help.xml");
+				var urlLoader:URLLoader = new URLLoader(urlRequest);	
+				urlLoader.addEventListener(Event.COMPLETE,Datacomplete);
+			}
+			private function Datacomplete(event:Event):void{
+				var xmlData:XML = new XML(event.target.data);
+				helpTree.dataProvider = xmlData;
+			}
+			
+			protected function helpTree_changeHandler(event:ListEvent):void{
+				var sn:XML=Tree(event.target).selectedItem as XML;
+				switch((sn.@url+"")){
+					case "c1":sh.source = "com/wgc/swf/c1.swf";break;
+					case "c2":sh.source = "com/wgc/swf/c2.swf";break;
+					case "c3":sh.source = "com/wgc/swf/c3.swf";break;
+					case "c4":sh.source = "com/wgc/swf/c4.swf";break;
+					case "c5":sh.source = "com/wgc/swf/c5.swf";break;
+					case "c6":sh.source = "com/wgc/swf/c6.swf";break;
+					case "c7":sh.source = "com/wgc/swf/c7.swf";break;
+					case "c8":sh.source = "com/wgc/swf/c8.swf";break;
+					case "s1":sh.source = "com/wgc/swf/s1.swf";break;
+					case "s2":sh.source = "com/wgc/swf/s2.swf";break;
+					case "s3":sh.source = "com/wgc/swf/s2.swf";break;
+					case "b1":sh.source = "com/wgc/swf/b1.swf";break;
+					case "b2":sh.source = "com/wgc/swf/b2.swf";break;
+					case "b3":sh.source = "com/wgc/swf/b3.swf";break;
+					case "b4":sh.source = "com/wgc/swf/b4.swf";break;
+					case "m1":sh.source = "com/wgc/swf/m1.swf";break;
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<mx:Canvas backgroundAlpha="0.5" backgroundColor="#20a5e5">
+		<mx:Tree id="helpTree" width="189" height="495" change="helpTree_changeHandler(event)" labelField="@label" 
+				 showRoot="false" x="6" y="10" color="#20a5e5"/>
+		<mx:Canvas id="v1" x="203" y="10" width="834" height="496" >
+			<mx:SWFLoader id="sh" x="0" y="0" width="830" height="496" source="com/wgc/images/help.png"/>
+		</mx:Canvas>
+	</mx:Canvas>
+</s:BorderContainer>

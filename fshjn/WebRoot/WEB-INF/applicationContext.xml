@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+	<bean id="DataSource" class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver"></property>
+		<property name="url" value="jdbc:sqlserver://127.0.0.1:1433;DatabaseName=test"></property>
+		<property name="username" value="sa"></property>
+		<property name="password" value="sql123"></property>
+		<property name="maxActive" value="100"></property>
+		<property name="maxWait" value="500"></property>
+		<property name="maxIdle" value="30"></property>
+		<property name="defaultAutoCommit" value="true"></property>
+	</bean>
+
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+		<property name="dataSource" >
+			<ref bean="DataSource"/>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.SQLServerDialect</prop>
+				<prop key="hibernate.show_sql">true</prop>
+			</props>
+		</property>
+		<property name="mappingResources" >
+			<list>
+				<value>com/wgc/beans/Appoint.hbm.xml</value>
+				<value>com/wgc/beans/Attendance.hbm.xml</value>
+				<value>com/wgc/beans/Building.hbm.xml</value>
+				<value>com/wgc/beans/Car_io.hbm.xml</value>
+				<value>com/wgc/beans/Car_style.hbm.xml</value>
+				<value>com/wgc/beans/Course.hbm.xml</value>
+				<value>com/wgc/beans/CoursesInfo.hbm.xml</value>
+				<value>com/wgc/beans/Senser.hbm.xml</value>
+				<value>com/wgc/beans/Senser_note.hbm.xml</value>
+				<value>com/wgc/beans/Senser_style.hbm.xml</value>
+				<value>com/wgc/beans/Student.hbm.xml</value>
+				<value>com/wgc/beans/Teacher.hbm.xml</value></list>
+		</property>
+	</bean>
+	
+	 <bean id="BuildingDAO" class="com.wgc.dao.BuildingDAO">
+	 	<property name="sessionFactory" ref="sessionFactory" />
+	 </bean>
+	 <bean id="AppointDAO" class="com.wgc.dao.AppointDAO">
+	 	<property name="sessionFactory" ref="sessionFactory" />
+	 </bean>
+	 <bean id="AttendanceDAO" class="com.wgc.dao.AttendanceDAO">
+	 	<property name="sessionFactory" ref="sessionFactory" />
+	 </bean>
+	 <bean id="Car_ioDAO" class="com.wgc.dao.Car_ioDAO">
+	 	<property name="sessionFactory" ref="sessionFactory" />
+	 </bean>
+	 <bean id="Car_styleDAO" class="com.wgc.dao.Car_styleDAO">
+	 	<property name="sessionFactory" ref="sessionFactory" />
+	 </bean>
+	 <bean id="CoursesInfoDAO" class="com.wgc.dao.CoursesInfoDAO">
+	 	<property name="sessionFactory" ref="sessionFactory" />
+	 </bean>	 
+	 <bean id="CourseDAO" class="com.wgc.dao.CourseDAO">
+	 	<property name="sessionFactory" ref="sessionFactory" />
+	 </bean>	 
+	 <bean id="SenserDAO" class="com.wgc.dao.SenserDAO">
+	 	<property name="sessionFactory" ref="sessionFactory" />
+	 </bean>	 
+	 <bean id="Senser_noteDAO" class="com.wgc.dao.Senser_noteDAO">
+	 	<property name="sessionFactory" ref="sessionFactory" />
+	 </bean>	 
+	 <bean id="Senser_styleDAO" class="com.wgc.dao.Senser_styleDAO">
+	 	<property name="sessionFactory" ref="sessionFactory" />
+	 </bean>	 
+	 <bean id="StudentDAO" class="com.wgc.dao.StudentDAO">
+	 	<property name="sessionFactory" ref="sessionFactory" />
+	 </bean>	 
+	 <bean id="TeacherDAO" class="com.wgc.dao.TeacherDAO">
+	 	<property name="sessionFactory" ref="sessionFactory" />
+	 </bean>
+	 	 
+
+ 	 <bean id="appointService" class="com.wgc.service.AppointService">
+ 	 	<property  name="appointDao" ref="AppointDAO"></property>
+ 	 </bean>
+ 	 <bean id="studentService" class="com.wgc.service.StudentService">
+ 	 	<property name="stuDao" ref="StudentDAO"></property>
+ 	 </bean>
+ 	  	<bean id="buildingService" class="com.wgc.service.BuildingService">
+	 	<property name="bInfoDao" ref="BuildingDAO" />
+ 	 </bean>
+ 	 <bean id="coursesInfoService" class="com.wgc.service.CoursesInfoService">
+ 	 	<property name="courseInfo" ref="CoursesInfoDAO"></property>
+ 	 </bean>
+ 	 <bean id="TeacherService" class="com.wgc.service.TeacherService">  
+ 	 		<property name="teacherDao"  ref="TeacherDAO" />
+ 	 </bean>
+ 	 <bean id="CourseService" class="com.wgc.service.CourseService">
+ 	 	<property name="courseDao" ref="CourseDAO" /> 	 	
+ 	 </bean>
+ 	 <bean id="senserService" class="com.wgc.service.SenserService">
+ 	 	<property name="senserDao" ref="SenserDAO"></property>
+ 	 </bean>
+ 	 <bean id="attendanceService" class="com.wgc.service.AttendanceService">
+ 	 	<property name="attendDao" ref="AttendanceDAO"></property>
+ 	 </bean>
+ 	 
+ 	 <bean id="saveAppoint" class="com.wgc.action.SaveAppoint">
+ 	 	<property name="appoService" ref="appointService"></property>
+ 	 	<property name="stuService" ref="studentService"></property>
+ 	 </bean>
+ 	 <bean id="selectCourse" class="com.wgc.action.SelectCourseInfo">
+ 	 	<property name="courInfoService" ref="coursesInfoService" ></property>
+ 	 </bean>
+ 	 <bean id="selectTeacher" class="com.wgc.action.SelectTeacher">
+ 	 		<property name="teacherService" ref="TeacherService" />
+ 	 </bean>
+ 	 <bean id="selectAppoint" class="com.wgc.action.SelectAppoint">
+ 	 	<property name="appoService" ref="appointService" />
+ 	 	<property name="stuService" ref="studentService"></property>
+ 	 </bean>
+ 	 <bean id="selectStudent" class="com.wgc.action.SelectStudent">
+ 	 	<property name="stuService" ref="studentService" />
+ 	 </bean>
+ 	 <bean id="updateAppoint" class="com.wgc.action.UpdateAppoint">
+ 	 	<property name="appoService" ref="appointService"></property>
+ 	 </bean>
+ 	 <bean id="selectCarPark" class="com.wgc.action.SelectCarNum">
+ 	 	<property name="buildingService" ref="buildingService"></property>
+ 	 </bean>
+ 	 <bean id="selectSenser" class="com.wgc.action.SelectSenser">
+ 	 		<property name="senserService" ref="senserService"></property>
+ 	 </bean>
+ 	 <bean id="selectEquError" class="com.wgc.action.SelectEquError">
+ 	 	<property name="senserService" ref="senserService" />
+ 	 	</bean>
+ 	 <bean id="selectAttend" class="com.wgc.action.SelectAtten">
+ 	 	<property name="attenService" ref="attendanceService" />
+ 	 	<property name="coursesinfoService" ref="coursesInfoService" />
+ 	 	<property name="studentService" ref="studentService"></property>
+ 	 </bean>
+	</beans>
